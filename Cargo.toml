@@ -15,7 +15,3 @@ serde_derive = "1.0"
 serde_json = "1.0"
 serde_yaml = "0.8"
 serde_gelf = {git = "https://github.com/cdumay/serde_gelf", features = ["ovh-ldp"]  }
-
-[[example]]
-name = "ldp"
-path = "examples/ldp.rs"
