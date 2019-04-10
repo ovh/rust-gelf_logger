@@ -3,18 +3,25 @@ use std::sync::mpsc::SendError;
 
 #[derive(Debug)]
 pub enum Error {
+    ChannelError(SendError<Event>),
     FileNotFound(String),
     InvalidOutput(String),
     IOError(std::io::Error),
     JsonSerializerError(serde_json::Error),
     LogError(log::SetLoggerError),
     NotInitialized(String),
+    TLSError(native_tls::HandshakeError<std::net::TcpStream>),
     ValueSerializerError(serde_value::SerializerError),
     YamlError(serde_yaml::Error),
-    ChannelError(SendError<Event>),
 }
 
 pub type Result<S> = std::result::Result<S, Error>;
+
+impl From<native_tls::HandshakeError<std::net::TcpStream>> for Error {
+    fn from(err: native_tls::HandshakeError<std::net::TcpStream>) -> Error {
+        Error::TLSError(err)
+    }
+}
 
 impl From<log::SetLoggerError> for Error {
     fn from(err: log::SetLoggerError) -> Error {

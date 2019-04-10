@@ -6,6 +6,7 @@ use std::time::Duration;
 use serde_gelf::record::GelfRecord;
 
 use crate::output::GelfTcpOutput;
+use crate::result::Error;
 
 /***************************************************************************************************
 // Event
@@ -47,7 +48,7 @@ impl Metronome {
 pub struct Buffer {
     items: Vec<GelfRecord>,
     arx: Arc<Mutex<Receiver<Event>>>,
-    errors: Vec<std::io::Error>,
+    errors: Vec<Error>,
     output: GelfTcpOutput,
 }
 

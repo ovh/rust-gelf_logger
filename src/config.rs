@@ -7,6 +7,7 @@ use crate::result::Result;
 
 pub trait ConfigBuilder {
     fn new() -> Self;
+    fn set_level(self, level: GelfLevel) -> Self;
     fn set_hostname(self, hostname: String) -> Self;
     fn set_port(self, port: u64) -> Self;
     fn set_null_character(self, null_character: bool) -> Self;
@@ -54,6 +55,10 @@ impl ConfigBuilder for Config {
             buffer_duration: None,
             additional_fields: BTreeMap::new(),
         }
+    }
+    fn set_level(mut self, level: GelfLevel) -> Config {
+        self.level = level;
+        self
     }
     fn set_hostname(mut self, hostname: String) -> Config {
         self.hostname = hostname;
