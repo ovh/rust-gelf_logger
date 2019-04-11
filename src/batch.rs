@@ -10,6 +10,7 @@ use crate::config::{Config, ConfigGetters};
 use crate::logger::GelfLogger;
 use crate::output::GelfTcpOutput;
 use crate::result::Result;
+use std::time::Duration;
 
 static mut BATCH_PROCESSOR: &'static Batch = &NoProcessor;
 
@@ -74,6 +75,10 @@ impl BatchProcessor {
     pub fn new(tx: SyncSender<Event>, level: GelfLevel) -> BatchProcessor {
         BatchProcessor { tx, level }
     }
+    pub fn flush(&self) -> Result<()> {
+        let _ = self.tx.send(Event::Send)?;
+        Ok(thread::sleep(Duration::from_secs(2)))
+    }
 }
 
 impl Batch for BatchProcessor {
@@ -88,7 +93,7 @@ impl Batch for BatchProcessor {
 impl Drop for BatchProcessor {
     fn drop(&mut self) {
         println!("Exiting, purging buffer...");
-        let _ = self.tx.send(Event::Send);
+        let _ = self.flush();
     }
 }
 
