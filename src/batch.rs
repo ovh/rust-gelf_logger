@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, sync_channel, SyncSender};
 use std::thread;
+use std::time::Duration;
 
 use serde_gelf::level::GelfLevel;
 use serde_gelf::record::{GelfRecord, GelfRecordGetter};
@@ -10,7 +11,6 @@ use crate::config::{Config, ConfigGetters};
 use crate::logger::GelfLogger;
 use crate::output::GelfTcpOutput;
 use crate::result::Result;
-use std::time::Duration;
 
 static mut BATCH_PROCESSOR: &'static Batch = &NoProcessor;
 
@@ -56,6 +56,7 @@ pub fn init(cfg: Config) -> Result<()> {
 
 pub trait Batch {
     fn send(&self, rec: &GelfRecord) -> Result<()>;
+    fn flush(&self) -> Result<()>;
 }
 
 
@@ -63,6 +64,7 @@ pub struct NoProcessor;
 
 impl Batch for NoProcessor {
     fn send(&self, _rec: &GelfRecord) -> Result<()> { Ok(()) }
+    fn flush(&self) -> Result<()> { Ok(()) }
 }
 
 
@@ -75,10 +77,6 @@ impl BatchProcessor {
     pub fn new(tx: SyncSender<Event>, level: GelfLevel) -> BatchProcessor {
         BatchProcessor { tx, level }
     }
-    pub fn flush(&self) -> Result<()> {
-        let _ = self.tx.send(Event::Send)?;
-        Ok(thread::sleep(Duration::from_secs(2)))
-    }
 }
 
 impl Batch for BatchProcessor {
@@ -87,6 +85,10 @@ impl Batch for BatchProcessor {
             self.tx.send(Event::Data(rec.clone()))?;
         }
         Ok(())
+    }
+    fn flush(&self) -> Result<()> {
+        let _ = self.tx.send(Event::Send)?;
+        Ok(thread::sleep(Duration::from_secs(2)))
     }
 }
 
