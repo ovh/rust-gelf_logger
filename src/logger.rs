@@ -1,5 +1,9 @@
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// Copyright 2009 The gelf_logger Authors. All rights reserved.
+
 use log::{Level, Log, Metadata, Record};
-use serde_gelf::record::GelfRecord;
+use serde_gelf::GelfRecord;
 
 use crate::batch::processor;
 

@@ -1,17 +1,16 @@
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// Copyright 2009 The gelf_logger Authors. All rights reserved.
+
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::time::Duration;
 
-use serde_gelf::record::GelfRecord;
+use serde_gelf::GelfRecord;
 
 use crate::output::GelfTcpOutput;
 use crate::result::Error;
-
-/***************************************************************************************************
-// Event
-***************************************************************************************************/
-
 
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -19,24 +18,10 @@ pub enum Event {
     Data(GelfRecord),
 }
 
-
-/***************************************************************************************************
-// Metronome
-***************************************************************************************************/
-
-
-#[derive(Clone, Debug)]
-pub struct Metronome {
-    frequency: u64,
-}
-
+pub struct Metronome;
 
 impl Metronome {
-    pub fn new(frequency: u64) -> Metronome {
-        Metronome { frequency }
-    }
-    pub fn start(&self, chan: SyncSender<Event>) {
-        let frequency = self.frequency;
+    pub fn start(frequency: u64, chan: SyncSender<Event>) {
         thread::spawn(move || loop {
             thread::sleep(Duration::from_millis(frequency));
             let _ = chan.send(Event::Send);

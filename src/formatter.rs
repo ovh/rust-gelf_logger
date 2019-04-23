@@ -1,10 +1,12 @@
-use std::collections::btree_map::BTreeMap;
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use serde_gelf::record::GelfRecord;
-use serde_gelf::record::GelfRecordBuilder;
-use serde_gelf::ser::GelfField;
+use std::collections::BTreeMap;
 
-use crate::config::{Config, ConfigGetters};
+use serde_gelf::{GelfRecord, GelfRecordBuilder};
+
+use crate::config::Config;
 use crate::result::Result;
 
 #[derive(Clone, Debug)]
@@ -17,9 +19,9 @@ impl GelfFormatter {
     pub fn new(null_character: bool, additional_fields: BTreeMap<String, serde_value::Value>) -> GelfFormatter {
         GelfFormatter {
             null_character,
-            additional_fields: match serde_value::to_value(&additional_fields) {
+            additional_fields: match serde_gelf::to_flat_dict(&additional_fields) {
                 Err(_) => BTreeMap::new(),
-                Ok(values) => GelfField::new("", "", &values).disassemble()
+                Ok(values) => values
             },
         }
     }

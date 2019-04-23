@@ -1,13 +1,16 @@
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// Copyright 2009 The gelf_logger Authors. All rights reserved.
+
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, sync_channel, SyncSender};
 use std::thread;
 use std::time::Duration;
 
-use serde_gelf::level::GelfLevel;
-use serde_gelf::record::{GelfRecord, GelfRecordGetter};
+use serde_gelf::{GelfLevel, GelfRecord, GelfRecordGetter};
 
 use crate::buffer::{Buffer, Event, Metronome};
-use crate::config::{Config, ConfigGetters};
+use crate::config::Config;
 use crate::logger::GelfLogger;
 use crate::output::GelfTcpOutput;
 use crate::result::Result;
@@ -25,16 +28,62 @@ fn set_processor_inner<F>(make_processor: F) -> Result<()> where F: FnOnce() -> 
     }
 }
 
+/// Initialize the logger using a configuration file.
+///
+/// ### Warning
+///
+/// The logging system may only be initialized once.
+///
+/// ## Example
+///
+/// ```rust
+/// use gelf_logger::Config;
+///
+/// fn main() {
+///     let cfg = Config::try_from_yaml("/tmp/myconfig.yml").unwrap();
+///     gelf_logger::init(cfg).unwrap();
+///
+///     info!("hello");
+///
+///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
+/// }
+/// ```
+///
 pub fn init_from_file(path: &str) -> Result<()> {
     init(Config::try_from_yaml(path)?)
 }
 
+/// Initialize the logger using the given [`Config`](struct.Config.html).
+///
+/// ### Warning
+///
+/// The logging system may only be initialized once.
+///
+/// ## Example
+///
+/// ```rust
+/// use gelf_logger::Config;
+///
+/// fn main() {
+///     let cfg = Config::builder()
+///         .set_hostname("myhost.com".into())
+///         .set_port(12202)
+///         .build();
+///
+///     gelf_logger::init(cfg).unwrap();
+///
+///     info!("hello");
+///
+///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
+/// }
+/// ```
+///
 pub fn init(cfg: Config) -> Result<()> {
     let (tx, rx): (SyncSender<Event>, Receiver<Event>) = sync_channel(10_000_000);
 
     if let &Some(duration) = cfg.buffer_duration() {
         let ctx = tx.clone();
-        Metronome::new(duration).start(ctx);
+        Metronome::start(duration, ctx);
     }
 
     let gelf_level = cfg.level().clone();
@@ -52,6 +101,33 @@ pub fn init(cfg: Config) -> Result<()> {
     let _ = set_boxed_processor(Box::new(BatchProcessor::new(tx, gelf_level)))?;
 
     Ok(())
+}
+
+/// Force current logger record buffer to be sent to the remote server.
+///
+/// It can be useful to perform a flush just before program exit.
+///
+/// ## Example
+///
+/// ```rust
+/// use gelf_logger::Config;
+///
+/// fn main() {
+///     let cfg = Config::builder()
+///         .set_hostname("myhost.com".into())
+///         .set_port(12202)
+///         .build();
+///
+///     gelf_logger::init(cfg).unwrap();
+///
+///     info!("hello");
+///
+///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
+/// }
+/// ```
+///
+pub fn flush() -> Result<()> {
+    processor().flush()
 }
 
 pub trait Batch {
@@ -92,11 +168,8 @@ impl Batch for BatchProcessor {
     }
 }
 
-impl Drop for BatchProcessor {
-    fn drop(&mut self) {
-        println!("Exiting, purging buffer...");
-        let _ = self.flush();
-    }
-}
-
+/// Returns a reference to the batch processor.
+///
+/// If a logger has not been set, a no-op implementation is returned.
+#[doc(hidden)]
 pub fn processor() -> &'static Batch { unsafe { BATCH_PROCESSOR } }

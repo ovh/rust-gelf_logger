@@ -1,10 +1,14 @@
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+// Copyright 2009 The gelf_logger Authors. All rights reserved.
+
 use std::io::Write;
 use std::net::TcpStream;
 
 use native_tls::TlsConnector;
-use serde_gelf::record::GelfRecord;
+use serde_gelf::GelfRecord;
 
-use crate::config::{Config, ConfigGetters};
+use crate::config::Config;
 use crate::formatter::GelfFormatter;
 use crate::result::Result;
 
