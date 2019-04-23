@@ -64,3 +64,7 @@ fn main() {
     gelf_logger::flush().unwrap();
 }
 ```
+
+## License
+
+Licensed under [BSD 3-Clause License](./LICENSE) or (https://opensource.org/licenses/BSD-3-Clause)
