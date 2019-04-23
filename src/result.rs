@@ -5,17 +5,22 @@
 use crate::buffer::Event;
 use std::sync::mpsc::SendError;
 
+/// Enum to represent errors
 #[derive(Debug)]
 pub enum Error {
+    /// Error raised if the program failed to send a record into the channel.
     ChannelError(SendError<Event>),
-    FileNotFound(String),
-    InvalidOutput(String),
+    /// Error raised if the output failed to write in the TCP socket.
     IOError(std::io::Error),
+    /// Error while JSON serialization.
     JsonSerializerError(serde_json::Error),
+    /// Error raised is the program failed to initialize the logger.
     LogError(log::SetLoggerError),
-    NotInitialized(String),
+    /// Error on TLS initialization.
     TLSError(native_tls::HandshakeError<std::net::TcpStream>),
+    /// Invalid value
     ValueSerializerError(serde_value::SerializerError),
+    /// Invalid yaml content
     YamlError(serde_yaml::Error),
 }
 

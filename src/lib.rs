@@ -85,6 +85,8 @@ extern crate serde_yaml;
 
 pub use batch::{flush, init, init_from_file, processor};
 pub use config::{Config, ConfigBuilder};
+pub use result::Error;
+pub use buffer::Event;
 
 mod batch;
 mod buffer;

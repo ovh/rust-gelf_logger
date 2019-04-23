@@ -12,9 +12,12 @@ use serde_gelf::GelfRecord;
 use crate::output::GelfTcpOutput;
 use crate::result::Error;
 
+/// Enum used to send commands over the channel.
 #[derive(Clone, Debug)]
 pub enum Event {
+    /// Command to force the flush of the buffer.
     Send,
+    /// Command used to send a record into the buffer.
     Data(GelfRecord),
 }
 
