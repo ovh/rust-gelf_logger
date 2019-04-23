@@ -2,8 +2,10 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use crate::buffer::Event;
+use std::fmt;
 use std::sync::mpsc::SendError;
+
+use crate::buffer::Event;
 
 /// Enum to represent errors
 #[derive(Debug)]
@@ -66,5 +68,22 @@ impl From<serde_json::Error> for Error {
 impl From<SendError<Event>> for Error {
     fn from(err: SendError<Event>) -> Error {
         Error::ChannelError(err)
+    }
+}
+
+impl std::error::Error for Error {}
+
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::ChannelError(err) => err.fmt(f),
+            Error::IOError(err) => err.fmt(f),
+            Error::JsonSerializerError(err) => err.fmt(f),
+            Error::LogError(err) => err.fmt(f),
+            Error::TLSError(err) => err.fmt(f),
+            Error::ValueSerializerError(err) => err.fmt(f),
+            Error::YamlError(err) => err.fmt(f),
+        }
     }
 }
