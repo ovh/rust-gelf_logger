@@ -1,7 +1,7 @@
 [package]
 name = "gelf_logger"
 version = "0.1.0"
-authors = ["Cédric Dumay <cedric.dumay@corp.ovh.com>"]
+authors = ["OVH SAS <github@ovh.net>"]
 edition = "2018"
 
 [features]
