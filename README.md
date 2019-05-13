@@ -1,4 +1,4 @@
-# gelf_logger [![Build Status](https://travis-ci.org/ovh/gelf_logger.svg?branch=master)](https://travis-ci.org/ovh/gelf_logger) [![Latest version](https://img.shields.io/crates/v/gelf_logger.svg)](https://crates.io/crates/gelf_logger) [![Documentation](https://docs.rs/gelf_logger/badge.svg)](https://docs.rs/gelf_logger) ![License](https://img.shields.io/crates/l/gelf_logger.svg)
+# gelf_logger [![Build Status](https://travis-ci.org/ovh/rust-gelf_logger.svg?branch=master)](https://travis-ci.org/ovh/rust-gelf_logger) [![Latest version](https://img.shields.io/crates/v/gelf_logger.svg)](https://crates.io/crates/gelf_logger) [![Documentation](https://docs.rs/gelf_logger/badge.svg)](https://docs.rs/gelf_logger) ![License](https://img.shields.io/crates/l/gelf_logger.svg)
 
 The Graylog Extended Log Format ([GELF](http://docs.graylog.org/en/latest/pages/gelf.html)) is a log format that avoids the shortcomings of classic
 log formats. GELF is a great choice for logging from within applications. There are libraries
