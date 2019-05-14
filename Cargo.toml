@@ -2,6 +2,12 @@
 name = "gelf_logger"
 version = "0.1.0"
 authors = ["OVH SAS <github@ovh.net>"]
+license = "BSD-3-Clause"
+license-file = "LICENSE"
+description = "Minimal rust logger to send log entries in GELF."
+keywords = ["serde", "logs", "GELF"]
+readme = "README.md"
+repository = "https://github.com/ovh/rust-gelf_logger"
 
 [features]
 ovh-ldp = ["serde_gelf/ovh-ldp"]
