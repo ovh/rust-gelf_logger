@@ -4,3 +4,4 @@
 Cargo.lock
 etc
 examples
+bin
