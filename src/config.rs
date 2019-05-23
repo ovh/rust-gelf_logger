@@ -23,6 +23,7 @@ use crate::result::Result;
 ///     .set_hostname("localhost".into())
 ///     .build();
 /// ```
+#[derive(Deserialize, Debug, Clone)]
 pub struct ConfigBuilder {
     level: GelfLevel,
     hostname: String,
@@ -36,6 +37,19 @@ pub struct ConfigBuilder {
 
 
 impl ConfigBuilder {
+    /// Load configuration using the given `path` file.
+    /// ## Example
+    ///
+    /// ```rust
+    /// use gelf_logger::ConfigBuilder;
+    ///
+    /// let config = ConfigBuilder::try_from_yaml("/tmp/myconf.yml")
+    ///     .expect("Invalid config file!")
+    ///     .build();
+    /// ```
+    pub fn try_from_yaml(path: &str) -> Result<ConfigBuilder> {
+        Ok(serde_yaml::from_reader(File::open(path)?)?)
+    }
     /// Construct new ConfigBuilder.
     ///
     /// Defaults values are:
