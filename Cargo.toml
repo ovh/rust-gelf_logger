@@ -16,8 +16,8 @@ ovh-ldp = ["serde_gelf/ovh-ldp"]
 log = { version = "0.4", features = ["std"] }
 native-tls = "0.2"
 serde = "1.0"
-serde-value = "0.5"
+serde-value = "0.6"
 serde_derive = "1.0"
-serde_gelf = "0.1"
+serde_gelf = "0.1.6"
 serde_json = "1.0"
 serde_yaml = "0.8"

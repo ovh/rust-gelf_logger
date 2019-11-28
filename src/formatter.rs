@@ -11,12 +11,12 @@ use crate::result::Result;
 
 #[derive(Clone, Debug)]
 pub struct GelfFormatter {
-    additional_fields: BTreeMap<String, serde_value::Value>,
+    additional_fields: BTreeMap<serde_value::Value, serde_value::Value>,
     null_character: bool,
 }
 
 impl GelfFormatter {
-    pub fn new(null_character: bool, additional_fields: BTreeMap<String, serde_value::Value>) -> GelfFormatter {
+    pub fn new(null_character: bool, additional_fields: BTreeMap<serde_value::Value, serde_value::Value>) -> GelfFormatter {
         GelfFormatter {
             null_character,
             additional_fields: match serde_gelf::to_flat_dict(&additional_fields) {
@@ -25,7 +25,7 @@ impl GelfFormatter {
             },
         }
     }
-    fn default_additional_fields(&self) -> &BTreeMap<String, serde_value::Value> {
+    fn default_additional_fields(&self) -> &BTreeMap<serde_value::Value, serde_value::Value> {
         &self.additional_fields
     }
 

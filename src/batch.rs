@@ -15,13 +15,13 @@ use crate::logger::GelfLogger;
 use crate::output::GelfTcpOutput;
 use crate::result::Result;
 
-static mut BATCH_PROCESSOR: &'static Batch = &NoProcessor;
+static mut BATCH_PROCESSOR: &'static dyn Batch = &NoProcessor;
 
-pub fn set_boxed_processor(processor: Box<Batch>) -> Result<()> {
+pub fn set_boxed_processor(processor: Box<dyn Batch>) -> Result<()> {
     set_processor_inner(|| unsafe { &*Box::into_raw(processor) })
 }
 
-fn set_processor_inner<F>(make_processor: F) -> Result<()> where F: FnOnce() -> &'static Batch {
+fn set_processor_inner<F>(make_processor: F) -> Result<()> where F: FnOnce() -> &'static dyn Batch {
     unsafe {
         BATCH_PROCESSOR = make_processor();
         Ok(())
@@ -172,4 +172,4 @@ impl Batch for BatchProcessor {
 ///
 /// If a logger has not been set, a no-op implementation is returned.
 #[doc(hidden)]
-pub fn processor() -> &'static Batch { unsafe { BATCH_PROCESSOR } }
+pub fn processor() -> &'static dyn Batch { unsafe { BATCH_PROCESSOR } }
