@@ -62,11 +62,11 @@ impl Buffer {
                         Err(exc) => {
                             self.errors.push(exc);
                             if self.errors.len() >= 5 {
-                                println!("Too many errors !");
+                                eprintln!("Many errors occurred while sending GELF logs event!");
                                 for err in self.errors.iter() {
-                                    println!("{:?}", err);
+                                    eprintln!(">> {:?}", err);
                                 }
-                                std::process::exit(0x0100);
+                                self.errors.clear();
                             }
                             thread::sleep(Duration::from_millis(100));
                         }
