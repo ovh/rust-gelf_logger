@@ -185,7 +185,7 @@ impl Config {
     pub fn ldp(cluster: &str, token: &str) -> Config {
         Config::builder()
             .set_hostname(cluster.to_string())
-            .put_additional_field("X-OVH-TOKEN".to_string(), serde_value::Value::String(token.to_string()))
+            .put_additional_field(serde_value::Value::String("X-OVH-TOKEN".to_string()), serde_value::Value::String(token.to_string()))
             .set_use_tls(true)
             .set_port(12202)
             .build()
