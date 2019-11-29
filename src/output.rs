@@ -12,6 +12,7 @@ use crate::config::Config;
 use crate::formatter::GelfFormatter;
 use crate::result::Result;
 
+/// Struct to send `GelfRecord` into a TCP socket
 #[derive(Clone, Debug)]
 pub struct GelfTcpOutput {
     hostname: String,
@@ -21,9 +22,11 @@ pub struct GelfTcpOutput {
 }
 
 impl GelfTcpOutput {
+    /// Create the TCP output
     pub fn new(hostname: String, port: u64, formatter: GelfFormatter, use_tls: bool) -> GelfTcpOutput {
         GelfTcpOutput { hostname, port, formatter, use_tls }
     }
+    /// Write `GelfRecord` into TCP socket
     pub fn send(&self, data: &Vec<GelfRecord>) -> Result<()> {
         let address = format!("{}:{}", &self.hostname, &self.port);
         match self.use_tls {

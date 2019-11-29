@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use std::fs::File;
 
 use serde_gelf::GelfLevel;
+use serde_value::Value;
 
 use crate::result::Result;
 
@@ -32,7 +33,7 @@ pub struct ConfigBuilder {
     use_tls: bool,
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
-    additional_fields: BTreeMap<String, serde_value::Value>,
+    additional_fields: BTreeMap<Value, Value>,
 }
 
 
@@ -114,12 +115,12 @@ impl ConfigBuilder {
         self
     }
     /// Adds an additional data which will be append to each log entry.
-    pub fn put_additional_field(mut self, key: String, value: serde_value::Value) -> ConfigBuilder {
-        self.additional_fields.insert(key, value);
+    pub fn put_additional_field(mut self, key: String, value: Value) -> ConfigBuilder {
+        self.additional_fields.insert(Value::String(key), value);
         self
     }
     /// Adds multiple additional data which will be append to each log entry.
-    pub fn extend_additional_fields(mut self, additional_fields: BTreeMap<String, serde_value::Value>) -> ConfigBuilder {
+    pub fn extend_additional_fields(mut self, additional_fields: BTreeMap<Value, Value>) -> ConfigBuilder {
         self.additional_fields.extend(additional_fields);
         self
     }
@@ -148,7 +149,7 @@ pub struct Config {
     use_tls: bool,
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
-    additional_fields: BTreeMap<String, serde_value::Value>,
+    additional_fields: BTreeMap<Value, Value>,
 }
 
 impl Config {
@@ -185,7 +186,7 @@ impl Config {
     pub fn ldp(cluster: &str, token: &str) -> Config {
         Config::builder()
             .set_hostname(cluster.to_string())
-            .put_additional_field("X-OVH-TOKEN".to_string(), serde_value::Value::String(token.to_string()))
+            .put_additional_field("X-OVH-TOKEN".to_string(), Value::String(token.to_string()))
             .set_use_tls(true)
             .set_port(12202)
             .build()
@@ -209,7 +210,7 @@ impl Config {
     /// server.
     pub fn buffer_duration(&self) -> &Option<u64> { &self.buffer_duration }
     /// Every additional data which will be append to each log entry.
-    pub fn additional_fields(&self) -> &BTreeMap<String, serde_value::Value> { &self.additional_fields }
+    pub fn additional_fields(&self) -> &BTreeMap<Value, Value> { &self.additional_fields }
     /// Returns a new builder.
     pub fn builder() -> ConfigBuilder { ConfigBuilder::new() }
 }

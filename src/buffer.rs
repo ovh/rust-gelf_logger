@@ -21,9 +21,11 @@ pub enum Event {
     Data(GelfRecord),
 }
 
+/// Metronome to send all buffered record into network
 pub struct Metronome;
 
 impl Metronome {
+    /// Start the metronome
     pub fn start(frequency: u64, chan: SyncSender<Event>) {
         thread::spawn(move || loop {
             thread::sleep(Duration::from_millis(frequency));
@@ -32,6 +34,7 @@ impl Metronome {
     }
 }
 
+/// struct to store a buffer of `GelfRecord`
 #[derive(Debug)]
 pub struct Buffer {
     items: Vec<GelfRecord>,
@@ -41,9 +44,11 @@ pub struct Buffer {
 }
 
 impl Buffer {
+    /// Initialize buffer
     pub fn new(arx: Arc<Mutex<Receiver<Event>>>, output: GelfTcpOutput) -> Buffer {
         Buffer { items: Vec::new(), arx, errors: Vec::new(), output }
     }
+    /// Buffer body (loop)
     pub fn run(&mut self) {
         loop {
             match { self.arx.lock().unwrap().recv() } {

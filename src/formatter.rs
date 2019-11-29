@@ -5,27 +5,29 @@
 use std::collections::BTreeMap;
 
 use serde_gelf::{GelfRecord, GelfRecordBuilder};
+use serde_value::Value;
+use serde_value_utils::to_flatten_maptree;
 
 use crate::config::Config;
 use crate::result::Result;
 
 #[derive(Clone, Debug)]
 pub struct GelfFormatter {
-    additional_fields: BTreeMap<String, serde_value::Value>,
+    additional_fields: BTreeMap<Value, Value>,
     null_character: bool,
 }
 
 impl GelfFormatter {
-    pub fn new(null_character: bool, additional_fields: BTreeMap<String, serde_value::Value>) -> GelfFormatter {
+    pub fn new(null_character: bool, additional_fields: BTreeMap<Value, Value>) -> GelfFormatter {
         GelfFormatter {
             null_character,
-            additional_fields: match serde_gelf::to_flat_dict(&additional_fields) {
+            additional_fields: match to_flatten_maptree("_",Some("_"), &additional_fields) {
                 Err(_) => BTreeMap::new(),
                 Ok(values) => values
             },
         }
     }
-    fn default_additional_fields(&self) -> &BTreeMap<String, serde_value::Value> {
+    fn default_additional_fields(&self) -> &BTreeMap<Value, Value> {
         &self.additional_fields
     }
 
