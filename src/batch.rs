@@ -2,7 +2,6 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, sync_channel, SyncSender};
 use std::thread;
 use std::time::Duration;
@@ -90,9 +89,8 @@ pub fn init(cfg: Config) -> Result<()> {
     let log_level = log::Level::from(&gelf_level);
 
     let logger = GelfLogger::new(log_level);
-    let arx = Arc::new(Mutex::new(rx));
     thread::spawn(move || {
-        let _ = Buffer::new(arx, GelfTcpOutput::from(&cfg)).run();
+        let _ = Buffer::new(rx, GelfTcpOutput::from(&cfg)).run();
     });
 
     log::set_boxed_logger(Box::new(logger)).unwrap();

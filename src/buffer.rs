@@ -2,7 +2,6 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::time::Duration;
@@ -35,18 +34,18 @@ impl Metronome {
 #[derive(Debug)]
 pub struct Buffer {
     items: Vec<GelfRecord>,
-    arx: Arc<Mutex<Receiver<Event>>>,
+    arx: Receiver<Event>,
     errors: Vec<Error>,
     output: GelfTcpOutput,
 }
 
 impl Buffer {
-    pub fn new(arx: Arc<Mutex<Receiver<Event>>>, output: GelfTcpOutput) -> Buffer {
+    pub fn new(arx: Receiver<Event>, output: GelfTcpOutput) -> Buffer {
         Buffer { items: Vec::new(), arx, errors: Vec::new(), output }
     }
     pub fn run(&mut self) {
         loop {
-            match { self.arx.lock().unwrap().recv() } {
+            match { self.arx.recv() } {
                 Ok(event) => {
                     match event {
                         Event::Send => match self.output.send(&self.items) {
