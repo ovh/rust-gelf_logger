@@ -2,7 +2,6 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::time::Duration;
@@ -38,39 +37,42 @@ impl Metronome {
 #[derive(Debug)]
 pub struct Buffer {
     items: Vec<GelfRecord>,
-    arx: Arc<Mutex<Receiver<Event>>>,
+    rx: Receiver<Event>,
     errors: Vec<Error>,
     output: GelfTcpOutput,
 }
 
 impl Buffer {
     /// Initialize buffer
-    pub fn new(arx: Arc<Mutex<Receiver<Event>>>, output: GelfTcpOutput) -> Buffer {
-        Buffer { items: Vec::new(), arx, errors: Vec::new(), output }
+    pub fn new(rx: Receiver<Event>, output: GelfTcpOutput) -> Buffer {
+        Buffer {
+            items: Vec::new(),
+            errors: Vec::new(),
+            rx,
+            output,
+        }
     }
     /// Buffer body (loop)
     pub fn run(&mut self) {
         loop {
-            match { self.arx.lock().unwrap().recv() } {
-                Ok(event) => {
-                    match event {
-                        Event::Send => match self.output.send(&self.items) {
-                            Ok(_) => self.items.clear(),
-                            Err(exc) => {
-                                self.errors.push(exc);
-                                if self.errors.len() >= 5 {
-                                    println!("Too many errors !");
-                                    for err in self.errors.iter() {
-                                        println!("{:?}", err);
-                                    }
-                                    std::process::exit(0x0100);
+            match { self.rx.recv() } {
+                Ok(event) => match event {
+                    Event::Send => match self.output.send(&self.items) {
+                        Ok(_) => self.items.clear(),
+                        Err(exc) => {
+                            self.errors.push(exc);
+                            if self.errors.len() >= 5 {
+                                println!("Too many errors !");
+                                for err in self.errors.iter() {
+                                    println!("{:?}", err);
                                 }
-                                thread::sleep(Duration::from_millis(100));
+                                std::process::exit(0x0100);
                             }
-                        },
-                        Event::Data(record) => self.items.push(record),
-                    }
-                }
+                            thread::sleep(Duration::from_millis(100));
+                        }
+                    },
+                    Event::Data(record) => self.items.push(record),
+                },
                 Err(_) => return,
             };
         }
