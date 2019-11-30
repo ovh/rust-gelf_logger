@@ -69,8 +69,8 @@
 //! }
 //! ```
 #![doc(
-html_logo_url = "https://eu.api.ovh.com/images/com-square-bichro.png",
-html_favicon_url = "https://www.ovh.com/favicon.ico",
+    html_logo_url = "https://eu.api.ovh.com/images/com-square-bichro.png",
+    html_favicon_url = "https://www.ovh.com/favicon.ico"
 )]
 //#![deny(warnings, missing_docs)]
 extern crate log;
@@ -84,7 +84,7 @@ extern crate serde_value;
 extern crate serde_value_utils;
 extern crate serde_yaml;
 
-pub use batch::{flush, init, init_from_file, processor, BatchProcessor, Batch};
+pub use batch::{flush, init, init_from_file, init_processor, processor, Batch, BatchProcessor};
 pub use buffer::{Buffer, Event, Metronome};
 pub use config::{Config, ConfigBuilder};
 pub use output::GelfTcpOutput;
@@ -98,5 +98,3 @@ mod logger;
 mod macros;
 mod output;
 mod result;
-
-

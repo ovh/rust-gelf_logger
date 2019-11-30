@@ -81,27 +81,39 @@ pub fn init_from_file(path: &str) -> Result<()> {
 /// ```
 ///
 pub fn init(cfg: Config) -> Result<()> {
-    let (tx, rx): (SyncSender<Event>, Receiver<Event>) = sync_channel(10_000_000);
+    let processor = init_processor(&cfg)?;
 
-    if let &Some(duration) = cfg.buffer_duration() {
-        let ctx = tx.clone();
-        Metronome::start(duration, ctx);
-    }
-
-    let gelf_level = cfg.level().clone();
-    let log_level = log::Level::from(&gelf_level);
-
+    let log_level = log::Level::from(cfg.level());
     let logger = GelfLogger::new(log_level);
-    thread::spawn(move || {
-        let _ = Buffer::new(rx, GelfTcpOutput::from(&cfg), cfg.buffer_size().clone()).run();
-    });
 
     log::set_boxed_logger(Box::new(logger)).unwrap();
     log::set_max_level(log_level.to_level_filter());
 
-    let _ = set_boxed_processor(Box::new(BatchProcessor::new(tx, gelf_level)))?;
+    let _ = set_boxed_processor(Box::new(processor))?;
 
     Ok(())
+}
+
+/// Initialize the BatchProcessor.
+///
+pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
+    let (tx, rx): (SyncSender<Event>, Receiver<Event>) = sync_channel(10_000_000);
+
+    if let Some(duration) = cfg.buffer_duration() {
+        let ctx = tx.clone();
+        Metronome::start(*duration, ctx);
+    }
+
+    let config = cfg.clone();
+
+    thread::spawn(move || {
+        let gelf_tcp_output = GelfTcpOutput::from(&config);
+        let _ = Buffer::new(rx, gelf_tcp_output, config.buffer_size().clone()).run();
+    });
+
+    let gelf_level = cfg.level().clone();
+
+    Ok(BatchProcessor::new(tx, gelf_level))
 }
 
 /// Force current logger record buffer to be sent to the remote server.
