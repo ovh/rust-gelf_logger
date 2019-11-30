@@ -2,7 +2,7 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use std::sync::mpsc::{Receiver, sync_channel, SyncSender};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::thread;
 use std::time::Duration;
 
@@ -20,7 +20,10 @@ pub fn set_boxed_processor(processor: Box<dyn Batch>) -> Result<()> {
     set_processor_inner(|| unsafe { &*Box::into_raw(processor) })
 }
 
-fn set_processor_inner<F>(make_processor: F) -> Result<()> where F: FnOnce() -> &'static dyn Batch {
+fn set_processor_inner<F>(make_processor: F) -> Result<()>
+where
+    F: FnOnce() -> &'static dyn Batch,
+{
     unsafe {
         BATCH_PROCESSOR = make_processor();
         Ok(())
@@ -90,7 +93,7 @@ pub fn init(cfg: Config) -> Result<()> {
 
     let logger = GelfLogger::new(log_level);
     thread::spawn(move || {
-        let _ = Buffer::new(rx, GelfTcpOutput::from(&cfg)).run();
+        let _ = Buffer::new(rx, GelfTcpOutput::from(&cfg), cfg.buffer_size().clone()).run();
     });
 
     log::set_boxed_logger(Box::new(logger)).unwrap();
@@ -133,12 +136,15 @@ pub trait Batch {
     fn flush(&self) -> Result<()>;
 }
 
-
 pub struct NoProcessor;
 
 impl Batch for NoProcessor {
-    fn send(&self, _rec: &GelfRecord) -> Result<()> { Ok(()) }
-    fn flush(&self) -> Result<()> { Ok(()) }
+    fn send(&self, _rec: &GelfRecord) -> Result<()> {
+        Ok(())
+    }
+    fn flush(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Struct to send event in thread
@@ -171,4 +177,6 @@ impl Batch for BatchProcessor {
 ///
 /// If a logger has not been set, a no-op implementation is returned.
 #[doc(hidden)]
-pub fn processor() -> &'static dyn Batch { unsafe { BATCH_PROCESSOR } }
+pub fn processor() -> &'static dyn Batch {
+    unsafe { BATCH_PROCESSOR }
+}
