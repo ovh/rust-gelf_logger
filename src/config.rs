@@ -31,7 +31,7 @@ pub struct ConfigBuilder {
     port: u64,
     null_character: bool,
     use_tls: bool,
-    async_buffer_size: usize,
+    async_buffer_size: Option<usize>,
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
@@ -71,7 +71,7 @@ impl ConfigBuilder {
             port: 12202,
             null_character: true,
             use_tls: true,
-            async_buffer_size: 1000, // sane default
+            async_buffer_size: None,
             buffer_size: None,
             buffer_duration: None,
             additional_fields: BTreeMap::default(),
@@ -115,7 +115,7 @@ impl ConfigBuilder {
     /// This actually allocates a buffer of this size, if you set a high value here,
     /// is will eat a large amount of memory.
     pub fn set_async_buffer_size(mut self, async_buffer_size: usize) -> ConfigBuilder {
-        self.async_buffer_size = async_buffer_size;
+        self.async_buffer_size = Some(async_buffer_size);
         self
     }
 
@@ -168,7 +168,7 @@ pub struct Config {
     port: u64,
     null_character: bool,
     use_tls: bool,
-    async_buffer_size: usize,
+    async_buffer_size: Option<usize>,
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
@@ -239,7 +239,9 @@ impl Config {
     /// and the network sender. This represent the maximum number of message the system
     /// will buffer before blocking while waiting for message to be actually sent to the
     /// remote server.
-    pub fn async_buffer_size(&self) -> usize {
+    ///
+    /// If None is configured, it defaults to 1000
+    pub fn async_buffer_size(&self) -> Option<usize> {
         self.async_buffer_size
     }
     /// Get the upperbound limit on the number of records that can be placed in the buffer, once

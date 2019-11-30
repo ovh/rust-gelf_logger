@@ -97,7 +97,8 @@ pub fn init(cfg: Config) -> Result<()> {
 /// Initialize the BatchProcessor.
 ///
 pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
-    let (tx, rx): (SyncSender<Event>, Receiver<Event>) = sync_channel(cfg.async_buffer_size());
+    let (tx, rx): (SyncSender<Event>, Receiver<Event>) =
+        sync_channel(cfg.async_buffer_size().unwrap_or(1000));
 
     if let Some(duration) = cfg.buffer_duration() {
         let ctx = tx.clone();
