@@ -34,7 +34,6 @@ impl Metronome {
 }
 
 /// struct to store a buffer of `GelfRecord`
-#[derive(Debug)]
 pub struct Buffer {
     items: Vec<GelfRecord>,
     rx: Receiver<Event>,
@@ -68,7 +67,6 @@ impl Buffer {
                                 }
                                 self.errors.clear();
                             }
-                            thread::sleep(Duration::from_millis(100));
                         }
                     },
                     Event::Data(record) => self.items.push(record),
