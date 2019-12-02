@@ -3,15 +3,17 @@
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
 use std::fmt;
-use std::sync::mpsc::SendError;
+use std::sync::mpsc::{SendError, TrySendError};
 
 use crate::buffer::Event;
 
 /// Enum to represent errors
 #[derive(Debug)]
 pub enum Error {
+    /// Error raised when  the channel gets disconnect or the async buffer is full
+    FullChannelError(Event),
     /// Error raised if the program failed to send a record into the channel.
-    ChannelError(SendError<Event>),
+    ChannelDisconnectedError(Event),
     /// Error raised if the output failed to write in the TCP socket.
     IOError(std::io::Error),
     /// Error while JSON serialization.
@@ -46,7 +48,6 @@ impl From<serde_yaml::Error> for Error {
     }
 }
 
-
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::IOError(err)
@@ -67,23 +68,37 @@ impl From<serde_json::Error> for Error {
 
 impl From<SendError<Event>> for Error {
     fn from(err: SendError<Event>) -> Error {
-        Error::ChannelError(err)
+        Error::ChannelDisconnectedError(err.0)
+    }
+}
+impl From<TrySendError<Event>> for Error {
+    fn from(err: TrySendError<Event>) -> Error {
+        match err {
+            TrySendError::Full(e) => Error::FullChannelError(e),
+            TrySendError::Disconnected(e) => Error::ChannelDisconnectedError(e),
+        }
     }
 }
 
 impl std::error::Error for Error {}
 
-
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::ChannelError(err) => err.fmt(f),
             Error::IOError(err) => err.fmt(f),
             Error::JsonSerializerError(err) => err.fmt(f),
             Error::LogError(err) => err.fmt(f),
             Error::TLSError(err) => err.fmt(f),
             Error::ValueSerializerError(err) => err.fmt(f),
             Error::YamlError(err) => err.fmt(f),
+            Error::FullChannelError(e) => {
+                write!(f, "Async channel buffer is full while sending {:?}", e)
+            }
+            Error::ChannelDisconnectedError(e) => write!(
+                f,
+                "Async channel buffer is disconnected while sending {:?}",
+                e
+            ),
         }
     }
 }

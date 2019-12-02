@@ -2,10 +2,8 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{Receiver, SyncSender};
-use std::thread;
-use std::time::Duration;
+use std::sync::mpsc::{Receiver, RecvTimeoutError};
+use std::time::{Duration, Instant};
 
 use serde_gelf::GelfRecord;
 
@@ -13,66 +11,92 @@ use crate::output::GelfTcpOutput;
 use crate::result::Error;
 
 /// Enum used to send commands over the channel.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum Event {
     /// Command to force the flush of the buffer.
-    Send,
+    Flush,
     /// Command used to send a record into the buffer.
     Data(GelfRecord),
 }
 
-/// Metronome to send all buffered record into network
-pub struct Metronome;
-
-impl Metronome {
-    /// Start the metronome
-    pub fn start(frequency: u64, chan: SyncSender<Event>) {
-        thread::spawn(move || loop {
-            thread::sleep(Duration::from_millis(frequency));
-            let _ = chan.send(Event::Send);
-        });
-    }
-}
-
 /// struct to store a buffer of `GelfRecord`
-#[derive(Debug)]
 pub struct Buffer {
     items: Vec<GelfRecord>,
-    arx: Arc<Mutex<Receiver<Event>>>,
+    rx: Receiver<Event>,
     errors: Vec<Error>,
     output: GelfTcpOutput,
+    buffer_size: Option<usize>,
+    buffer_duration: Option<Duration>,
 }
 
 impl Buffer {
     /// Initialize buffer
-    pub fn new(arx: Arc<Mutex<Receiver<Event>>>, output: GelfTcpOutput) -> Buffer {
-        Buffer { items: Vec::new(), arx, errors: Vec::new(), output }
+    pub fn new(
+        rx: Receiver<Event>,
+        output: GelfTcpOutput,
+        buffer_size: Option<usize>,
+        buffer_duration: Option<Duration>,
+    ) -> Buffer {
+        Buffer {
+            items: Vec::new(),
+            errors: Vec::new(),
+            rx,
+            output,
+            buffer_size,
+            buffer_duration,
+        }
     }
     /// Buffer body (loop)
     pub fn run(&mut self) {
+        let mut last_send = Instant::now();
         loop {
-            match { self.arx.lock().unwrap().recv() } {
-                Ok(event) => {
-                    match event {
-                        Event::Send => match self.output.send(&self.items) {
-                            Ok(_) => self.items.clear(),
-                            Err(exc) => {
-                                self.errors.push(exc);
-                                if self.errors.len() >= 5 {
-                                    println!("Too many errors !");
-                                    for err in self.errors.iter() {
-                                        println!("{:?}", err);
-                                    }
-                                    std::process::exit(0x0100);
-                                }
-                                thread::sleep(Duration::from_millis(100));
-                            }
-                        },
-                        Event::Data(record) => self.items.push(record),
+            let time_to_wait = self
+                .buffer_duration
+                .map(|duration| duration.checked_sub(Instant::now().duration_since(last_send)))
+                .unwrap_or(None); // flatten() would have been more explicit here bit it is not stable yet
+
+            let event = match time_to_wait {
+                None => match self.rx.recv() {
+                    Ok(e) => e,
+                    Err(_) => return,
+                },
+                Some(duration) => match self.rx.recv_timeout(duration) {
+                    Ok(e) => e,
+                    Err(e) => match e {
+                        RecvTimeoutError::Timeout => Event::Flush,
+                        RecvTimeoutError::Disconnected => return,
+                    },
+                },
+            };
+
+            match event {
+                Event::Flush => self.flush(),
+                Event::Data(record) => {
+                    self.items.push(record);
+                    if let Some(max_buffer_size) = self.buffer_size {
+                        if self.items.len() >= max_buffer_size {
+                            self.flush();
+                        }
                     }
                 }
-                Err(_) => return,
-            };
+            }
+            last_send = Instant::now();
+        }
+    }
+
+    fn flush(&mut self) {
+        match self.output.send(&self.items) {
+            Ok(_) => self.items.clear(),
+            Err(exc) => {
+                self.errors.push(exc);
+                if self.errors.len() >= 5 {
+                    eprintln!("Many errors occurred while sending GELF logs event!");
+                    for err in self.errors.iter() {
+                        eprintln!(">> {:?}", err);
+                    }
+                    self.errors.clear();
+                }
+            }
         }
     }
 }

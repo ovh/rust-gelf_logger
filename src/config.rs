@@ -31,11 +31,14 @@ pub struct ConfigBuilder {
     port: u64,
     null_character: bool,
     use_tls: bool,
+    async_buffer_size: Option<usize>,
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
+    full_buffer_policy: Option<FullBufferPolicy>,
+    connect_timeout_ms: Option<u64>,
+    write_timeout_ms: Option<u64>,
 }
-
 
 impl ConfigBuilder {
     /// Load configuration using the given `path` file.
@@ -71,9 +74,13 @@ impl ConfigBuilder {
             port: 12202,
             null_character: true,
             use_tls: true,
+            async_buffer_size: None,
             buffer_size: None,
             buffer_duration: None,
             additional_fields: BTreeMap::default(),
+            full_buffer_policy: Some(FullBufferPolicy::Discard),
+            connect_timeout_ms: None,
+            write_timeout_ms: None,
         }
     }
     /// Sets threshold for this logger to level. Logging messages which are less severe than level
@@ -102,6 +109,22 @@ impl ConfigBuilder {
         self.use_tls = use_tls;
         self
     }
+    /// Set the asynchronous buffer size. This buffer is placed between the log subsystem
+    /// and the network sender. This represent the maximum number of message the system
+    /// will buffer before blocking while waiting for message to be actually sent to the
+    /// remote server.
+    ///
+    /// Default: 1000
+    ///
+    /// ### Warning
+    ///
+    /// This actually allocates a buffer of this size, if you set a high value here,
+    /// is will eat a large amount of memory.
+    pub fn set_async_buffer_size(mut self, async_buffer_size: usize) -> ConfigBuilder {
+        self.async_buffer_size = Some(async_buffer_size);
+        self
+    }
+
     /// Sets the upperbound limit on the number of records that can be placed in the buffer, once
     /// this size has been reached, the buffer will be sent to the remote server.
     pub fn set_buffer_size(mut self, buffer_size: usize) -> ConfigBuilder {
@@ -120,10 +143,33 @@ impl ConfigBuilder {
         self
     }
     /// Adds multiple additional data which will be append to each log entry.
-    pub fn extend_additional_fields(mut self, additional_fields: BTreeMap<Value, Value>) -> ConfigBuilder {
+    pub fn extend_additional_fields(
+        mut self,
+        additional_fields: BTreeMap<Value, Value>,
+    ) -> ConfigBuilder {
         self.additional_fields.extend(additional_fields);
         self
     }
+    /// Set the policy to apply when async send buffer is full.
+    ///
+    /// It is recommended to use the `FullBufferPolicy::Discard` policy.
+    ///
+    /// If not set or set to `None`, `FullBufferPolicy::Discard` will be used by default
+    pub fn set_full_buffer_policy(mut self, policy: Option<FullBufferPolicy>) -> ConfigBuilder {
+        self.full_buffer_policy = policy;
+        self
+    }
+    /// Set the TCP connect timeout.    
+    pub fn set_connect_timeout_ms(mut self, connect_timeout_ms: Option<u64>) -> ConfigBuilder {
+        self.connect_timeout_ms = connect_timeout_ms;
+        self
+    }
+    /// Set the TCP write timeout.    
+    pub fn set_write_timeout_ms(mut self, write_timeout_ms: Option<u64>) -> ConfigBuilder {
+        self.write_timeout_ms = write_timeout_ms;
+        self
+    }
+
     /// Invoke the builder and return a Config
     pub fn build(self) -> Config {
         Config {
@@ -132,11 +178,34 @@ impl ConfigBuilder {
             port: self.port,
             null_character: self.null_character,
             use_tls: self.use_tls,
+            async_buffer_size: self.async_buffer_size,
             buffer_size: self.buffer_size,
             buffer_duration: self.buffer_duration,
             additional_fields: self.additional_fields,
+            full_buffer_policy: self.full_buffer_policy,
+            connect_timeout_ms: self.connect_timeout_ms,
+            write_timeout_ms: self.write_timeout_ms,
         }
     }
+}
+
+/// The policy to apply when the async buffer is full.
+///
+/// This policy does not apply to `flush` methods.
+#[derive(Deserialize, Debug, Clone, Copy)]
+pub enum FullBufferPolicy {
+    /// Wait for the log entry to be consumed by the BatchProcessor.
+    ///
+    /// If the async buffer is full, subsequent calls to log() will wait for
+    /// space in the buffer. Note that this will bock the application. Use this
+    /// option with care: a transient network error might cause the logging code
+    /// to silently hang the whole program.
+    ///
+    #[serde(rename = "wait")]
+    Wait,
+    /// Discard new records if the async buffer is full.
+    #[serde(rename = "discard")]
+    Discard,
 }
 
 /// Struct to manipulate configuration.
@@ -147,9 +216,13 @@ pub struct Config {
     port: u64,
     null_character: bool,
     use_tls: bool,
+    async_buffer_size: Option<usize>,
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
+    full_buffer_policy: Option<FullBufferPolicy>,
+    connect_timeout_ms: Option<u64>,
+    write_timeout_ms: Option<u64>,
 }
 
 impl Config {
@@ -194,23 +267,63 @@ impl Config {
 
     /// The threshold for this logger to level. Logging messages which are less severe than level
     /// will be ignored.
-    pub fn level(&self) -> &GelfLevel { &self.level }
+    pub fn level(&self) -> &GelfLevel {
+        &self.level
+    }
     /// The name of the remote server.
-    pub fn hostname(&self) -> &String { &self.hostname }
+    pub fn hostname(&self) -> &String {
+        &self.hostname
+    }
     /// The port of the remote host.
-    pub fn port(&self) -> &u64 { &self.port }
+    pub fn port(&self) -> &u64 {
+        &self.port
+    }
     /// Adds a NUL byte (`\0`) after each entry.
-    pub fn null_character(&self) -> &bool { &self.null_character }
+    pub fn null_character(&self) -> &bool {
+        &self.null_character
+    }
     /// Activate transport security.
-    pub fn use_tls(&self) -> &bool { &self.use_tls }
+    pub fn use_tls(&self) -> &bool {
+        &self.use_tls
+    }
+    /// Get the asynchronous buffer size. This buffer is placed between the log subsystem
+    /// and the network sender. This represent the maximum number of message the system
+    /// will buffer before blocking while waiting for message to be actually sent to the
+    /// remote server.
+    ///
+    /// If None is configured, it defaults to 1000
+    pub fn async_buffer_size(&self) -> Option<usize> {
+        self.async_buffer_size
+    }
     /// Get the upperbound limit on the number of records that can be placed in the buffer, once
     /// this size has been reached, the buffer will be sent to the remote server.
-    pub fn buffer_size(&self) -> &Option<usize> { &self.buffer_size }
+    pub fn buffer_size(&self) -> &Option<usize> {
+        &self.buffer_size
+    }
     /// Get the maximum lifetime (in milli seconds) of the buffer before send it to the remote
     /// server.
-    pub fn buffer_duration(&self) -> &Option<u64> { &self.buffer_duration }
+    pub fn buffer_duration(&self) -> &Option<u64> {
+        &self.buffer_duration
+    }
     /// Every additional data which will be append to each log entry.
-    pub fn additional_fields(&self) -> &BTreeMap<Value, Value> { &self.additional_fields }
+    pub fn additional_fields(&self) -> &BTreeMap<Value, Value> {
+        &self.additional_fields
+    }
+    /// Get the full buffer policy
+    pub fn full_buffer_policy(&self) -> Option<FullBufferPolicy> {
+        self.full_buffer_policy
+    }
+    /// Get the write timeout in milliseconds
+    pub fn write_timeout_ms(&self) -> Option<u64> {
+        self.write_timeout_ms
+    }
+    /// Get the connect timeout in milliseconds
+    pub fn connect_timeout_ms(&self) -> Option<u64> {
+        self.connect_timeout_ms
+    }
+
     /// Returns a new builder.
-    pub fn builder() -> ConfigBuilder { ConfigBuilder::new() }
+    pub fn builder() -> ConfigBuilder {
+        ConfigBuilder::new()
+    }
 }

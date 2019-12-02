@@ -2,18 +2,19 @@
 // license that can be found in the LICENSE file.
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
-use std::sync::{Arc, Mutex};
-use std::sync::mpsc::{Receiver, sync_channel, SyncSender};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
 use std::thread;
 use std::time::Duration;
 
 use serde_gelf::{GelfLevel, GelfRecord, GelfRecordGetter};
 
-use crate::buffer::{Buffer, Event, Metronome};
+use crate::buffer::Buffer;
 use crate::config::Config;
 use crate::logger::GelfLogger;
 use crate::output::GelfTcpOutput;
 use crate::result::Result;
+use buffer::Event;
+use config::FullBufferPolicy;
 
 static mut BATCH_PROCESSOR: &'static dyn Batch = &NoProcessor;
 
@@ -21,7 +22,10 @@ pub fn set_boxed_processor(processor: Box<dyn Batch>) -> Result<()> {
     set_processor_inner(|| unsafe { &*Box::into_raw(processor) })
 }
 
-fn set_processor_inner<F>(make_processor: F) -> Result<()> where F: FnOnce() -> &'static dyn Batch {
+fn set_processor_inner<F>(make_processor: F) -> Result<()>
+where
+    F: FnOnce() -> &'static dyn Batch,
+{
     unsafe {
         BATCH_PROCESSOR = make_processor();
         Ok(())
@@ -79,28 +83,46 @@ pub fn init_from_file(path: &str) -> Result<()> {
 /// ```
 ///
 pub fn init(cfg: Config) -> Result<()> {
-    let (tx, rx): (SyncSender<Event>, Receiver<Event>) = sync_channel(10_000_000);
+    let processor = init_processor(&cfg)?;
 
-    if let &Some(duration) = cfg.buffer_duration() {
-        let ctx = tx.clone();
-        Metronome::start(duration, ctx);
-    }
-
-    let gelf_level = cfg.level().clone();
-    let log_level = log::Level::from(&gelf_level);
-
+    let log_level = log::Level::from(cfg.level());
     let logger = GelfLogger::new(log_level);
-    let arx = Arc::new(Mutex::new(rx));
-    thread::spawn(move || {
-        let _ = Buffer::new(arx, GelfTcpOutput::from(&cfg)).run();
-    });
 
     log::set_boxed_logger(Box::new(logger)).unwrap();
     log::set_max_level(log_level.to_level_filter());
 
-    let _ = set_boxed_processor(Box::new(BatchProcessor::new(tx, gelf_level)))?;
+    let _ = set_boxed_processor(Box::new(processor))?;
 
     Ok(())
+}
+
+/// Initialize the BatchProcessor.
+///
+pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
+    let (tx, rx): (SyncSender<Event>, Receiver<Event>) =
+        sync_channel(cfg.async_buffer_size().unwrap_or(1000));
+
+    let config = cfg.clone();
+
+    thread::spawn(move || {
+        let gelf_tcp_output = GelfTcpOutput::from(&config);
+        let _ = Buffer::new(
+            rx,
+            gelf_tcp_output,
+            config.buffer_size().clone(),
+            config.buffer_duration().map(|d| Duration::from_millis(d)),
+        )
+        .run();
+    });
+
+    let gelf_level = cfg.level().clone();
+
+    Ok(BatchProcessor::new(
+        tx,
+        gelf_level,
+        cfg.full_buffer_policy()
+            .unwrap_or(FullBufferPolicy::Discard),
+    ))
 }
 
 /// Force current logger record buffer to be sent to the remote server.
@@ -130,41 +152,62 @@ pub fn flush() -> Result<()> {
     processor().flush()
 }
 
+/// Trait for async batch processing of `GelfRecord`.
 pub trait Batch {
+    /// Send the `GelfRecord` in the async batch processor
+    ///
+    /// Records will actually be sent depending on configuration options
     fn send(&self, rec: &GelfRecord) -> Result<()>;
+    /// Flushes buffered records to the network
     fn flush(&self) -> Result<()>;
 }
-
 
 pub struct NoProcessor;
 
 impl Batch for NoProcessor {
-    fn send(&self, _rec: &GelfRecord) -> Result<()> { Ok(()) }
-    fn flush(&self) -> Result<()> { Ok(()) }
+    fn send(&self, _rec: &GelfRecord) -> Result<()> {
+        Ok(())
+    }
+    fn flush(&self) -> Result<()> {
+        Ok(())
+    }
 }
 
 /// Struct to send event in thread
 pub struct BatchProcessor {
     tx: SyncSender<Event>,
     level: GelfLevel,
+    full_buffer_policy: FullBufferPolicy,
 }
 
 impl BatchProcessor {
     /// Create a ne processor
-    pub fn new(tx: SyncSender<Event>, level: GelfLevel) -> BatchProcessor {
-        BatchProcessor { tx, level }
+    pub fn new(
+        tx: SyncSender<Event>,
+        level: GelfLevel,
+        full_buffer_policy: FullBufferPolicy,
+    ) -> BatchProcessor {
+        BatchProcessor {
+            tx,
+            level,
+            full_buffer_policy,
+        }
     }
 }
 
 impl Batch for BatchProcessor {
     fn send(&self, rec: &GelfRecord) -> Result<()> {
         if self.level >= rec.level() {
-            self.tx.send(Event::Data(rec.clone()))?;
+            match self.full_buffer_policy {
+                FullBufferPolicy::Wait => self.tx.send(Event::Data(rec.clone()))?,
+                FullBufferPolicy::Discard => self.tx.try_send(Event::Data(rec.clone()))?,
+            }
         }
         Ok(())
     }
     fn flush(&self) -> Result<()> {
-        let _ = self.tx.send(Event::Send)?;
+        let _ = self.tx.send(Event::Flush)?;
+        // FIXME it would be nice to have something more deterministic
         Ok(thread::sleep(Duration::from_secs(2)))
     }
 }
@@ -173,4 +216,6 @@ impl Batch for BatchProcessor {
 ///
 /// If a logger has not been set, a no-op implementation is returned.
 #[doc(hidden)]
-pub fn processor() -> &'static dyn Batch { unsafe { BATCH_PROCESSOR } }
+pub fn processor() -> &'static dyn Batch {
+    unsafe { BATCH_PROCESSOR }
+}

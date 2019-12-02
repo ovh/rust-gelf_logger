@@ -8,7 +8,7 @@ use serde_gelf::GelfRecord;
 use crate::batch::processor;
 
 pub struct GelfLogger {
-    level: Level
+    level: Level,
 }
 
 impl Log for GelfLogger {
@@ -18,7 +18,9 @@ impl Log for GelfLogger {
     fn log(&self, record: &Record) {
         let _ = processor().send(&GelfRecord::from(record));
     }
-    fn flush(&self) {}
+    fn flush(&self) {
+        let _ = processor().flush();
+    }
 }
 
 impl GelfLogger {
