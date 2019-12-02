@@ -10,7 +10,7 @@ use crate::buffer::Event;
 /// Enum to represent errors
 #[derive(Debug)]
 pub enum Error {
-    // Error raised when  the channel gets disconnect or the async buffer is full
+    /// Error raised when  the channel gets disconnect or the async buffer is full
     FullChannelError(TrySendError<Event>),
     /// Error raised if the program failed to send a record into the channel.
     ChannelError(SendError<Event>),

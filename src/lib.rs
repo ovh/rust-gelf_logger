@@ -72,7 +72,7 @@
     html_logo_url = "https://eu.api.ovh.com/images/com-square-bichro.png",
     html_favicon_url = "https://www.ovh.com/favicon.ico"
 )]
-//#![deny(warnings, missing_docs)]
+#![deny(warnings, missing_docs)]
 extern crate log;
 extern crate native_tls;
 extern crate serde;

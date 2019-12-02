@@ -152,8 +152,13 @@ pub fn flush() -> Result<()> {
     processor().flush()
 }
 
+/// Trait for async batch processing of `GelfRecord`.
 pub trait Batch {
+    /// Send the `GelfRecord` in the async batch processor
+    ///
+    /// Records will actually be sent depending on configuration options
     fn send(&self, rec: &GelfRecord) -> Result<()>;
+    /// Flushes buffered records to the network
     fn flush(&self) -> Result<()>;
 }
 
