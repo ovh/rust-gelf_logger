@@ -36,6 +36,8 @@ pub struct ConfigBuilder {
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
     full_buffer_policy: Option<FullBufferPolicy>,
+    connect_timeout_ms: Option<u64>,
+    write_timeout_ms: Option<u64>,
 }
 
 impl ConfigBuilder {
@@ -77,6 +79,8 @@ impl ConfigBuilder {
             buffer_duration: None,
             additional_fields: BTreeMap::default(),
             full_buffer_policy: Some(FullBufferPolicy::Discard),
+            connect_timeout_ms: None,
+            write_timeout_ms: None,
         }
     }
     /// Sets threshold for this logger to level. Logging messages which are less severe than level
@@ -155,6 +159,16 @@ impl ConfigBuilder {
         self.full_buffer_policy = policy;
         self
     }
+    /// Set the TCP connect timeout.    
+    pub fn set_connect_timeout_ms(mut self, connect_timeout_ms: Option<u64>) -> ConfigBuilder {
+        self.connect_timeout_ms = connect_timeout_ms;
+        self
+    }
+    /// Set the TCP write timeout.    
+    pub fn set_write_timeout_ms(mut self, write_timeout_ms: Option<u64>) -> ConfigBuilder {
+        self.write_timeout_ms = write_timeout_ms;
+        self
+    }
 
     /// Invoke the builder and return a Config
     pub fn build(self) -> Config {
@@ -169,6 +183,8 @@ impl ConfigBuilder {
             buffer_duration: self.buffer_duration,
             additional_fields: self.additional_fields,
             full_buffer_policy: self.full_buffer_policy,
+            connect_timeout_ms: self.connect_timeout_ms,
+            write_timeout_ms: self.write_timeout_ms,
         }
     }
 }
@@ -205,6 +221,8 @@ pub struct Config {
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
     full_buffer_policy: Option<FullBufferPolicy>,
+    connect_timeout_ms: Option<u64>,
+    write_timeout_ms: Option<u64>,
 }
 
 impl Config {
@@ -295,6 +313,15 @@ impl Config {
     pub fn full_buffer_policy(&self) -> Option<FullBufferPolicy> {
         self.full_buffer_policy
     }
+    /// Get the write timeout in milliseconds
+    pub fn write_timeout_ms(&self) -> Option<u64> {
+        self.write_timeout_ms
+    }
+    /// Get the connect timeout in milliseconds
+    pub fn connect_timeout_ms(&self) -> Option<u64> {
+        self.connect_timeout_ms
+    }
+
     /// Returns a new builder.
     pub fn builder() -> ConfigBuilder {
         ConfigBuilder::new()

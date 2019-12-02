@@ -3,7 +3,7 @@
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
 use std::io::Write;
-use std::net::TcpStream;
+use std::net::{TcpStream, ToSocketAddrs};
 
 use native_tls::TlsConnector;
 use serde_gelf::GelfRecord;
@@ -11,6 +11,8 @@ use serde_gelf::GelfRecord;
 use crate::config::Config;
 use crate::formatter::GelfFormatter;
 use crate::result::Result;
+use std::io;
+use std::time::Duration;
 
 /// Struct to send `GelfRecord` into a TCP socket
 pub struct GelfTcpOutput {
@@ -19,6 +21,8 @@ pub struct GelfTcpOutput {
     formatter: GelfFormatter,
     use_tls: bool,
     stream: Option<Box<dyn Write>>,
+    connect_timeout: Option<Duration>,
+    write_timeout: Option<Duration>,
 }
 
 impl GelfTcpOutput {
@@ -28,6 +32,8 @@ impl GelfTcpOutput {
         port: u64,
         formatter: GelfFormatter,
         use_tls: bool,
+        connect_timeout: Option<Duration>,
+        write_timeout: Option<Duration>,
     ) -> GelfTcpOutput {
         GelfTcpOutput {
             hostname,
@@ -35,6 +41,8 @@ impl GelfTcpOutput {
             formatter,
             use_tls,
             stream: None,
+            connect_timeout,
+            write_timeout,
         }
     }
     /// Write `GelfRecord` into TCP socket
@@ -49,12 +57,11 @@ impl GelfTcpOutput {
 
     fn write_stream(&mut self, bytes: &[u8]) -> Result<()> {
         if self.stream.is_none() {
-            let address = format!("{}:{}", &self.hostname, &self.port);
             self.stream = Some(match self.use_tls {
-                false => Box::new(TcpStream::connect(address)?),
+                false => Box::new(self.tcp_connect()?),
                 true => {
                     let connector = TlsConnector::new().unwrap();
-                    let stream = TcpStream::connect(address)?;
+                    let stream = self.tcp_connect()?;
                     Box::new(connector.connect(&self.hostname, stream)?)
                 }
             })
@@ -66,6 +73,19 @@ impl GelfTcpOutput {
         }
         Ok(())
     }
+
+    fn tcp_connect(&self) -> io::Result<TcpStream> {
+        let address = format!("{}:{}", &self.hostname, &self.port);
+        let stream = match &self.connect_timeout {
+            None => TcpStream::connect(address)?,
+            Some(dur) => TcpStream::connect_timeout(
+                &address.to_socket_addrs()?.next().unwrap(),
+                dur.clone(),
+            )?,
+        };
+        stream.set_write_timeout(self.write_timeout)?;
+        Ok(stream)
+    }
 }
 
 impl From<&Config> for GelfTcpOutput {
@@ -75,6 +95,8 @@ impl From<&Config> for GelfTcpOutput {
             cfg.port().clone(),
             GelfFormatter::from(cfg),
             cfg.use_tls().clone(),
+            cfg.connect_timeout_ms().map(|ms| Duration::from_millis(ms)),
+            cfg.write_timeout_ms().map(|ms| Duration::from_millis(ms)),
         )
     }
 }
