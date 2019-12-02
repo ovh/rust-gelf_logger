@@ -85,7 +85,7 @@ extern crate serde_value_utils;
 extern crate serde_yaml;
 
 pub use batch::{flush, init, init_from_file, init_processor, processor, Batch, BatchProcessor};
-pub use buffer::{Buffer, Event, Metronome};
+pub use buffer::Buffer;
 pub use config::{Config, ConfigBuilder};
 pub use output::GelfTcpOutput;
 pub use result::Error;

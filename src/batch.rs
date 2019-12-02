@@ -8,11 +8,13 @@ use std::time::Duration;
 
 use serde_gelf::{GelfLevel, GelfRecord, GelfRecordGetter};
 
-use crate::buffer::{Buffer, Event, Metronome};
+use crate::buffer::Buffer;
 use crate::config::Config;
 use crate::logger::GelfLogger;
 use crate::output::GelfTcpOutput;
 use crate::result::Result;
+use buffer::Event;
+use config::FullBufferPolicy;
 
 static mut BATCH_PROCESSOR: &'static dyn Batch = &NoProcessor;
 
@@ -100,21 +102,27 @@ pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
     let (tx, rx): (SyncSender<Event>, Receiver<Event>) =
         sync_channel(cfg.async_buffer_size().unwrap_or(1000));
 
-    if let Some(duration) = cfg.buffer_duration() {
-        let ctx = tx.clone();
-        Metronome::start(*duration, ctx);
-    }
-
     let config = cfg.clone();
 
     thread::spawn(move || {
         let gelf_tcp_output = GelfTcpOutput::from(&config);
-        let _ = Buffer::new(rx, gelf_tcp_output, config.buffer_size().clone()).run();
+        let _ = Buffer::new(
+            rx,
+            gelf_tcp_output,
+            config.buffer_size().clone(),
+            config.buffer_duration().map(|d| Duration::from_millis(d)),
+        )
+        .run();
     });
 
     let gelf_level = cfg.level().clone();
 
-    Ok(BatchProcessor::new(tx, gelf_level))
+    Ok(BatchProcessor::new(
+        tx,
+        gelf_level,
+        cfg.full_buffer_policy()
+            .unwrap_or(FullBufferPolicy::Discard),
+    ))
 }
 
 /// Force current logger record buffer to be sent to the remote server.
@@ -164,24 +172,37 @@ impl Batch for NoProcessor {
 pub struct BatchProcessor {
     tx: SyncSender<Event>,
     level: GelfLevel,
+    full_buffer_policy: FullBufferPolicy,
 }
 
 impl BatchProcessor {
     /// Create a ne processor
-    pub fn new(tx: SyncSender<Event>, level: GelfLevel) -> BatchProcessor {
-        BatchProcessor { tx, level }
+    pub fn new(
+        tx: SyncSender<Event>,
+        level: GelfLevel,
+        full_buffer_policy: FullBufferPolicy,
+    ) -> BatchProcessor {
+        BatchProcessor {
+            tx,
+            level,
+            full_buffer_policy,
+        }
     }
 }
 
 impl Batch for BatchProcessor {
     fn send(&self, rec: &GelfRecord) -> Result<()> {
         if self.level >= rec.level() {
-            self.tx.send(Event::Data(rec.clone()))?;
+            match self.full_buffer_policy {
+                FullBufferPolicy::Wait => self.tx.send(Event::Data(rec.clone()))?,
+                FullBufferPolicy::Discard => self.tx.try_send(Event::Data(rec.clone()))?,
+            }
         }
         Ok(())
     }
     fn flush(&self) -> Result<()> {
-        let _ = self.tx.send(Event::Send)?;
+        let _ = self.tx.send(Event::Flush)?;
+        // FIXME it would be nice to have something more deterministic
         Ok(thread::sleep(Duration::from_secs(2)))
     }
 }

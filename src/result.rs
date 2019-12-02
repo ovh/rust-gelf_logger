@@ -3,13 +3,15 @@
 // Copyright 2009 The gelf_logger Authors. All rights reserved.
 
 use std::fmt;
-use std::sync::mpsc::SendError;
+use std::sync::mpsc::{SendError, TrySendError};
 
 use crate::buffer::Event;
 
 /// Enum to represent errors
 #[derive(Debug)]
 pub enum Error {
+    // Error raised when  the channel gets disconnect or the async buffer is full
+    FullChannelError(TrySendError<Event>),
     /// Error raised if the program failed to send a record into the channel.
     ChannelError(SendError<Event>),
     /// Error raised if the output failed to write in the TCP socket.
@@ -46,7 +48,6 @@ impl From<serde_yaml::Error> for Error {
     }
 }
 
-
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Error {
         Error::IOError(err)
@@ -70,9 +71,13 @@ impl From<SendError<Event>> for Error {
         Error::ChannelError(err)
     }
 }
+impl From<TrySendError<Event>> for Error {
+    fn from(err: TrySendError<Event>) -> Error {
+        Error::FullChannelError(err)
+    }
+}
 
 impl std::error::Error for Error {}
-
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -84,6 +89,7 @@ impl fmt::Display for Error {
             Error::TLSError(err) => err.fmt(f),
             Error::ValueSerializerError(err) => err.fmt(f),
             Error::YamlError(err) => err.fmt(f),
+            Error::FullChannelError(err) => err.fmt(f),
         }
     }
 }

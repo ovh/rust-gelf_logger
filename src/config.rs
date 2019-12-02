@@ -35,6 +35,7 @@ pub struct ConfigBuilder {
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
+    full_buffer_policy: Option<FullBufferPolicy>,
 }
 
 impl ConfigBuilder {
@@ -75,6 +76,7 @@ impl ConfigBuilder {
             buffer_size: None,
             buffer_duration: None,
             additional_fields: BTreeMap::default(),
+            full_buffer_policy: Some(FullBufferPolicy::Discard),
         }
     }
     /// Sets threshold for this logger to level. Logging messages which are less severe than level
@@ -144,6 +146,16 @@ impl ConfigBuilder {
         self.additional_fields.extend(additional_fields);
         self
     }
+    /// Set the policy to apply when async send buffer is full.
+    ///
+    /// It is recommended to use the `FullBufferPolicy::Discard` policy.
+    ///
+    /// If not set or set to `None`, `FullBufferPolicy::Discard` will be used by default
+    pub fn set_full_buffer_policy(mut self, policy: Option<FullBufferPolicy>) -> ConfigBuilder {
+        self.full_buffer_policy = policy;
+        self
+    }
+
     /// Invoke the builder and return a Config
     pub fn build(self) -> Config {
         Config {
@@ -156,8 +168,28 @@ impl ConfigBuilder {
             buffer_size: self.buffer_size,
             buffer_duration: self.buffer_duration,
             additional_fields: self.additional_fields,
+            full_buffer_policy: self.full_buffer_policy,
         }
     }
+}
+
+/// The policy to apply when the async buffer is full.
+///
+/// This policy does not apply to `flush` methods.
+#[derive(Deserialize, Debug, Clone, Copy)]
+pub enum FullBufferPolicy {
+    /// Wait for the log entry to be consumed by the BatchProcessor.
+    ///
+    /// If the async buffer is full, subsequent calls to log() will wait for
+    /// space in the buffer. Note that this will bock the application. Use this
+    /// option with care: a transient network error might cause the logging code
+    /// to silently hang the whole program.
+    ///
+    #[serde(rename = "wait")]
+    Wait,
+    /// Discard new records if the async buffer is full.
+    #[serde(rename = "discard")]
+    Discard,
 }
 
 /// Struct to manipulate configuration.
@@ -172,6 +204,7 @@ pub struct Config {
     buffer_size: Option<usize>,
     buffer_duration: Option<u64>,
     additional_fields: BTreeMap<Value, Value>,
+    full_buffer_policy: Option<FullBufferPolicy>,
 }
 
 impl Config {
@@ -257,6 +290,10 @@ impl Config {
     /// Every additional data which will be append to each log entry.
     pub fn additional_fields(&self) -> &BTreeMap<Value, Value> {
         &self.additional_fields
+    }
+    /// Get the full buffer policy
+    pub fn full_buffer_policy(&self) -> Option<FullBufferPolicy> {
+        self.full_buffer_policy
     }
     /// Returns a new builder.
     pub fn builder() -> ConfigBuilder {
