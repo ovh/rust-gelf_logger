@@ -11,6 +11,7 @@ use crate::output::GelfTcpOutput;
 use crate::result::Error;
 
 /// Enum used to send commands over the channel.
+#[derive(Debug)]
 pub enum Event {
     /// Command to force the flush of the buffer.
     Flush,
