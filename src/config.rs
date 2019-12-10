@@ -40,21 +40,8 @@ pub struct ConfigBuilder {
     write_timeout_ms: Option<u64>,
 }
 
-impl ConfigBuilder {
-    /// Load configuration using the given `path` file.
-    /// ## Example
-    ///
-    /// ```rust
-    /// use gelf_logger::ConfigBuilder;
-    ///
-    /// let config = ConfigBuilder::try_from_yaml("/tmp/myconf.yml")
-    ///     .expect("Invalid config file!")
-    ///     .build();
-    /// ```
-    pub fn try_from_yaml(path: &str) -> Result<ConfigBuilder> {
-        Ok(serde_yaml::from_reader(File::open(path)?)?)
-    }
-    /// Construct new ConfigBuilder.
+impl Default for ConfigBuilder {
+    /// Construct default ConfigBuilder.
     ///
     /// Defaults values are:
     ///
@@ -67,7 +54,7 @@ impl ConfigBuilder {
     /// - buffer_duration: None
     /// - additional_fields: empty BTreeMap
     ///
-    pub fn new() -> ConfigBuilder {
+    fn default() -> Self {
         ConfigBuilder {
             level: GelfLevel::default(),
             hostname: "127.0.0.1".to_string(),
@@ -82,6 +69,22 @@ impl ConfigBuilder {
             connect_timeout_ms: None,
             write_timeout_ms: None,
         }
+    }
+}
+
+impl ConfigBuilder {
+    /// Load configuration using the given `path` file.
+    /// ## Example
+    ///
+    /// ```rust
+    /// use gelf_logger::ConfigBuilder;
+    ///
+    /// let config = ConfigBuilder::try_from_yaml("/tmp/myconf.yml")
+    ///     .expect("Invalid config file!")
+    ///     .build();
+    /// ```
+    pub fn try_from_yaml(path: &str) -> Result<ConfigBuilder> {
+        Ok(serde_yaml::from_reader(File::open(path)?)?)
     }
     /// Sets threshold for this logger to level. Logging messages which are less severe than level
     /// will be ignored.
@@ -324,6 +327,6 @@ impl Config {
 
     /// Returns a new builder.
     pub fn builder() -> ConfigBuilder {
-        ConfigBuilder::new()
+        ConfigBuilder::default()
     }
 }
