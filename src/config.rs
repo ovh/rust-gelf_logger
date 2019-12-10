@@ -138,8 +138,12 @@ impl ConfigBuilder {
         self
     }
     /// Adds an additional data which will be append to each log entry.
-    pub fn put_additional_field(mut self, key: String, value: Value) -> ConfigBuilder {
-        self.additional_fields.insert(Value::String(key), value);
+    pub fn put_additional_field<V>(mut self, key: String, value: V) -> ConfigBuilder
+    where
+        V: Into<Value>,
+    {
+        self.additional_fields
+            .insert(Value::String(key), value.into());
         self
     }
     /// Adds multiple additional data which will be append to each log entry.
