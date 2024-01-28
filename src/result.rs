@@ -1,16 +1,19 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// Copyright 2009 The gelf_logger Authors. All rights reserved.
+// Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::fmt;
-use std::sync::mpsc::{SendError, TrySendError};
+use std::{
+    fmt,
+    sync::mpsc::{SendError, TrySendError},
+};
 
 use crate::buffer::Event;
 
 /// Enum to represent errors
 #[derive(Debug)]
 pub enum Error {
-    /// Error raised when  the channel gets disconnect or the async buffer is full
+    /// Error raised when  the channel gets disconnect or the async buffer is
+    /// full
     FullChannelError(Event),
     /// Error raised if the program failed to send a record into the channel.
     ChannelDisconnectedError(Event),

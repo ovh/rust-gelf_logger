@@ -1,14 +1,15 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// Copyright 2009 The gelf_logger Authors. All rights reserved.
+// Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::sync::mpsc::{Receiver, RecvTimeoutError};
-use std::time::{Duration, Instant};
+use std::{
+    sync::mpsc::{Receiver, RecvTimeoutError},
+    time::{Duration, Instant},
+};
 
 use serde_gelf::GelfRecord;
 
-use crate::output::GelfTcpOutput;
-use crate::result::Error;
+use crate::{output::GelfTcpOutput, result::Error};
 
 /// Enum used to send commands over the channel.
 #[derive(Debug)]
