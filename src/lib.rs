@@ -39,29 +39,27 @@
 //!     }
 //! }
 //!
-//! fn main() {
-//!     let cfg = Config::builder()
-//!         .set_hostname("localhost".into())
-//!         .set_port(12202)
-//!         .set_level(GelfLevel::Informational)
-//!         .set_buffer_duration(300)
-//!         .set_buffer_size(500)
-//!         .put_additional_field("myValue".into(), serde_value::Value::I64(10))
-//!         .set_null_character(true)
-//!         .build();
+//! let cfg = Config::builder()
+//!     .set_hostname("localhost".into())
+//!     .set_port(12202)
+//!     .set_level(GelfLevel::Informational)
+//!     .set_buffer_duration(300)
+//!     .set_buffer_size(500)
+//!     .put_additional_field("myValue".into(), serde_value::Value::I64(10))
+//!     .set_null_character(true)
+//!     .build();
 //!
-//!     // Initialize logger
-//!     gelf_logger::init(cfg).unwrap();
+//! // Initialize logger
+//! gelf_logger::init(cfg).unwrap();
 //!
-//!     // Send log using a macro defined in the create log
-//!     info!("common message");
+//! // Send log using a macro defined in the create log
+//! info!("common message");
 //!
-//!     // Use a macro from gelf_logger to send additional data
-//!     gelf_warn!(extra: &Myapp::default(), "My app info");
+//! // Use a macro from gelf_logger to send additional data
+//! gelf_warn!(extra: &Myapp::default(), "My app info");
 //!
-//!     // make sure all buffered records are sent before exiting
-//!     gelf_logger::flush().unwrap();
-//! }
+//! // make sure all buffered records are sent before exiting
+//! gelf_logger::flush().unwrap();
 //! ```
 #![doc(
     html_logo_url = "https://eu.api.ovh.com/images/com-square-bichro.png",

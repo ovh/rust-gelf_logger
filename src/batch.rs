@@ -46,14 +46,12 @@ where
 /// use gelf_logger::Config;
 /// use log::info;
 ///
-/// fn main() {
-///     let cfg = Config::try_from_yaml("/tmp/myconfig.yml").unwrap();
-///     gelf_logger::init(cfg).unwrap();
+/// let cfg = Config::try_from_yaml("/tmp/myconfig.yml").unwrap();
+/// gelf_logger::init(cfg).unwrap();
 ///
-///     info!("hello");
+/// info!("hello");
 ///
-///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
-/// }
+/// gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// ```
 pub fn init_from_file(path: &str) -> Result<()> {
     init(Config::try_from_yaml(path)?)
@@ -71,29 +69,27 @@ pub fn init_from_file(path: &str) -> Result<()> {
 /// use gelf_logger::Config;
 /// use log::info;
 ///
-/// fn main() {
-///     let cfg = Config::builder()
-///         .set_hostname("myhost.com".into())
-///         .set_port(12202)
-///         .build();
+/// let cfg = Config::builder()
+///     .set_hostname("myhost.com".into())
+///     .set_port(12202)
+///     .build();
 ///
-///     gelf_logger::init(cfg).unwrap();
+/// gelf_logger::init(cfg).unwrap();
 ///
-///     info!("hello");
+/// info!("hello");
 ///
-///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
-/// }
+/// gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// ```
 pub fn init(cfg: Config) -> Result<()> {
     let processor = init_processor(&cfg)?;
 
-    let log_level = log::Level::from(cfg.level());
+    let log_level = log::Level::from(&cfg.level());
     let logger = GelfLogger::new(log_level);
 
     log::set_boxed_logger(Box::new(logger)).unwrap();
     log::set_max_level(log_level.to_level_filter());
 
-    let _ = set_boxed_processor(Box::new(processor))?;
+    set_boxed_processor(Box::new(processor))?;
 
     Ok(())
 }
@@ -107,16 +103,16 @@ pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
 
     thread::spawn(move || {
         let gelf_tcp_output = GelfTcpOutput::from(&config);
-        let _ = Buffer::new(
+        Buffer::new(
             rx,
             gelf_tcp_output,
-            config.buffer_size().clone(),
-            config.buffer_duration().map(|d| Duration::from_millis(d)),
+            config.buffer_size(),
+            config.buffer_duration().map(Duration::from_millis),
         )
         .run();
     });
 
-    let gelf_level = cfg.level().clone();
+    let gelf_level = cfg.level();
 
     Ok(BatchProcessor::new(
         tx,
@@ -136,18 +132,16 @@ pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
 /// use gelf_logger::Config;
 /// use log::info;
 ///
-/// fn main() {
-///     let cfg = Config::builder()
-///         .set_hostname("myhost.com".into())
-///         .set_port(12202)
-///         .build();
+/// let cfg = Config::builder()
+///     .set_hostname("myhost.com".into())
+///     .set_port(12202)
+///     .build();
 ///
-///     gelf_logger::init(cfg).unwrap();
+/// gelf_logger::init(cfg).unwrap();
 ///
-///     info!("hello");
+/// info!("hello");
 ///
-///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
-/// }
+/// gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// ```
 pub fn flush() -> Result<()> {
     processor().flush()
@@ -207,9 +201,10 @@ impl Batch for BatchProcessor {
         Ok(())
     }
     fn flush(&self) -> Result<()> {
-        let _ = self.tx.send(Event::Flush)?;
+        self.tx.send(Event::Flush)?;
         // FIXME it would be nice to have something more deterministic
-        Ok(thread::sleep(Duration::from_secs(2)))
+        thread::sleep(Duration::from_secs(2));
+        Ok(())
     }
 }
 

@@ -28,17 +28,18 @@ impl GelfFormatter {
         &self.additional_fields
     }
 
-    fn null_character(&self) -> &bool {
-        &self.null_character
+    fn null_character(&self) -> bool {
+        self.null_character
     }
 
     pub fn format(&self, record: &GelfRecord) -> Result<String> {
         let rec = record
             .clone()
             .extend_additional_fields(self.default_additional_fields().clone());
-        Ok(match self.null_character() {
-            &true => format!("{}\n\0", serde_json::to_string(&rec)?),
-            &false => format!("{}\n", serde_json::to_string(&rec)?),
+        Ok(if self.null_character() {
+            format!("{}\n\0", serde_json::to_string(&rec)?)
+        } else {
+            format!("{}\n", serde_json::to_string(&rec)?)
         })
     }
 }
@@ -46,7 +47,7 @@ impl GelfFormatter {
 impl From<&Config> for GelfFormatter {
     fn from(cfg: &Config) -> GelfFormatter {
         GelfFormatter::new(
-            cfg.null_character().clone(),
+            cfg.null_character(),
             cfg.additional_fields().clone(),
         )
     }

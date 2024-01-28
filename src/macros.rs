@@ -20,12 +20,10 @@
 ///    version: String,
 /// }
 ///
-/// fn main() {
-///     gelf_log!(level: GelfLevel::Error, "Hello!");
+/// gelf_log!(level: GelfLevel::Error, "Hello!");
 ///
-///     let myapp = Myapp { name: "myapp".into(), version: "0.0.1".into() };
-///     gelf_log!(level: GelfLevel::Debugging, extra: &myapp, "myapp state");
-/// }
+/// let myapp = Myapp { name: "myapp".into(), version: "0.0.1".into() };
+/// gelf_log!(level: GelfLevel::Debugging, extra: &myapp, "myapp state");
 /// ```
 #[macro_export]
 macro_rules! gelf_log {

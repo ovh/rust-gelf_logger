@@ -274,24 +274,24 @@ impl Config {
 
     /// The threshold for this logger to level. Logging messages which are less
     /// severe than level will be ignored.
-    pub fn level(&self) -> &GelfLevel {
-        &self.level
+    pub fn level(&self) -> GelfLevel {
+        self.level
     }
     /// The name of the remote server.
     pub fn hostname(&self) -> &String {
         &self.hostname
     }
     /// The port of the remote host.
-    pub fn port(&self) -> &u64 {
-        &self.port
+    pub fn port(&self) -> u64 {
+        self.port
     }
     /// Adds a NUL byte (`\0`) after each entry.
-    pub fn null_character(&self) -> &bool {
-        &self.null_character
+    pub fn null_character(&self) -> bool {
+        self.null_character
     }
     /// Activate transport security.
-    pub fn use_tls(&self) -> &bool {
-        &self.use_tls
+    pub fn use_tls(&self) -> bool {
+        self.use_tls
     }
     /// Get the asynchronous buffer size. This buffer is placed between the log
     /// subsystem and the network sender. This represent the maximum number
@@ -305,13 +305,13 @@ impl Config {
     /// Get the upperbound limit on the number of records that can be placed in
     /// the buffer, once this size has been reached, the buffer will be sent
     /// to the remote server.
-    pub fn buffer_size(&self) -> &Option<usize> {
-        &self.buffer_size
+    pub fn buffer_size(&self) -> Option<usize> {
+        self.buffer_size
     }
-    /// Get the maximum lifetime (in milli seconds) of the buffer before send it
+    /// Get the maximum lifetime (in milliseconds) of the buffer before send it
     /// to the remote server.
-    pub fn buffer_duration(&self) -> &Option<u64> {
-        &self.buffer_duration
+    pub fn buffer_duration(&self) -> Option<u64> {
+        self.buffer_duration
     }
     /// Every additional data which will be append to each log entry.
     pub fn additional_fields(&self) -> &BTreeMap<Value, Value> {
