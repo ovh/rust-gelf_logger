@@ -81,10 +81,9 @@ impl GelfTcpOutput {
         let address = format!("{}:{}", &self.hostname, &self.port);
         let stream = match &self.connect_timeout {
             None => TcpStream::connect(address)?,
-            Some(dur) => TcpStream::connect_timeout(
-                &address.to_socket_addrs()?.next().unwrap(),
-                *dur,
-            )?,
+            Some(dur) => {
+                TcpStream::connect_timeout(&address.to_socket_addrs()?.next().unwrap(), *dur)?
+            }
         };
         stream.set_write_timeout(self.write_timeout)?;
         Ok(stream)

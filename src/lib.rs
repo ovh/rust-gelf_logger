@@ -72,6 +72,7 @@ pub use buffer::Buffer;
 pub use config::{Config, ConfigBuilder};
 pub use output::GelfTcpOutput;
 pub use result::Error;
+pub use serde_value::Value;
 
 mod batch;
 mod buffer;
