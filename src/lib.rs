@@ -19,17 +19,10 @@
 //! ## Example
 //!
 //! ```rust
-//! #[macro_use]
-//! extern crate gelf_logger;
-//! #[macro_use]
-//! extern crate log;
-//! #[macro_use]
-//! extern crate serde_derive;
-//! extern crate serde_value;
-//!
+//! use gelf_logger::{gelf_warn, Config};
+//! use log::info;
+//! use serde_derive::Serialize;
 //! use serde_gelf::GelfLevel;
-//!
-//! use gelf_logger::Config;
 //!
 //! #[derive(Serialize)]
 //! struct Myapp {

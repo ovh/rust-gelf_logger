@@ -10,9 +10,9 @@
 /// # Examples
 ///
 /// ```rust
+/// use gelf_logger::gelf_log;
 /// use serde_derive::Serialize;
 /// use serde_gelf::GelfLevel;
-/// use gelf_logger::gelf_log;
 ///
 /// #[derive(Serialize)]
 /// struct Myapp {
@@ -23,7 +23,7 @@
 /// fn main() {
 ///     gelf_log!(level: GelfLevel::Error, "Hello!");
 ///
-///     let myapp = Myapp {name: "myapp".into(), version: "0.0.1".into()};
+///     let myapp = Myapp { name: "myapp".into(), version: "0.0.1".into() };
 ///     gelf_log!(level: GelfLevel::Debugging, extra: &myapp, "myapp state");
 /// }
 /// ```
@@ -40,21 +40,18 @@ macro_rules! gelf_log {
                 .set_line(line!())
                 .set_level($level)
                 .set_message(format_args!($($arg)+).to_string())
-                .extend_additional_fields(match serde_gelf::to_flat_dict($extra) {
-                    Ok(data) => data,
-                    Err(_) => BTreeMap::new()
-                })
+                .extend_additional_fields(serde_gelf::to_flat_dict($extra).unwrap_or_default())
             );
         }
     };
     (level: $level:expr, $($arg:tt)+) => {
-        gelf_log!(level: $level, extra: &std::collections::BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        gelf_log!(level: $level, extra: &std::collections::BTreeMap::<(), ()>::new(), $($arg)+);
     };
     (extra: $extra:expr, $($arg:tt)+) => {
         gelf_log!(level: serde_gelf::GelfLevel::default(), extra: $extra, $($arg)+);
     };
     ($($arg:tt)+) => {
-        gelf_log!(level: serde_gelf::GelfLevel::default(), extra: &std::collections::BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        gelf_log!(level: serde_gelf::GelfLevel::default(), extra: &std::collections::BTreeMap::<(), ()>::new(), $($arg)+);
     };
 }
 
@@ -76,7 +73,7 @@ macro_rules! gelf_emergency {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Emergency, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Emergency, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Emergency, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -98,7 +95,7 @@ macro_rules! gelf_alert {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Alert, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Alert, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Alert, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -121,7 +118,7 @@ macro_rules! gelf_critical {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Critical, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Critical, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Critical, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -143,7 +140,7 @@ macro_rules! gelf_error {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Error, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Error, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Error, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -166,7 +163,7 @@ macro_rules! gelf_warn {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Warning, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Warning, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Warning, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -189,7 +186,7 @@ macro_rules! gelf_notice {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Notice, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Notice, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Notice, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -212,7 +209,7 @@ macro_rules! gelf_info {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Informational, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Informational, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Informational, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
 
@@ -234,6 +231,6 @@ macro_rules! gelf_debug {
         $crate::gelf_log!(level: serde_gelf::GelfLevel::Debugging, extra: $extra, $($arg)+);
     );
     ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Debugging, extra: &BTreeMap::<serde_value::Value, serde_value::Value>::new(), $($arg)+);
+        $crate::gelf_log!(level: serde_gelf::GelfLevel::Debugging, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
     );
 }
