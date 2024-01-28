@@ -53,6 +53,7 @@ where
 ///
 /// gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// ```
+#[cfg(feature = "yaml")]
 pub fn init_from_file(path: &str) -> Result<()> {
     init(Config::try_from_yaml(path)?)
 }
