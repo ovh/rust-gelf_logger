@@ -24,6 +24,7 @@ impl GelfFormatter {
                 .unwrap_or_else(|_| BTreeMap::new()),
         }
     }
+
     fn default_additional_fields(&self) -> &BTreeMap<Value, Value> {
         &self.additional_fields
     }

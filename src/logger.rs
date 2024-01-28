@@ -15,9 +15,11 @@ impl Log for GelfLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {
         metadata.level() <= self.level
     }
+
     fn log(&self, record: &Record) {
         let _ = processor().send(&GelfRecord::from(record));
     }
+
     fn flush(&self) {
         let _ = processor().flush();
     }
