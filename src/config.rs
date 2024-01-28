@@ -2,12 +2,15 @@
 // license that can be found in the LICENSE file.
 // Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::{collections::BTreeMap, fs::File};
+use std::collections::BTreeMap;
+#[cfg(feature = "yaml")]
+use std::fs::File;
 
 use serde_derive::Deserialize;
 use serde_gelf::GelfLevel;
 use serde_value::Value;
 
+#[cfg(feature = "yaml")]
 use crate::result::Result;
 
 /// Builder for [`Config`](struct.Config.html).
@@ -82,6 +85,7 @@ impl ConfigBuilder {
     ///     .expect("Invalid config file!")
     ///     .build();
     /// ```
+    #[cfg(feature = "yaml")]
     pub fn try_from_yaml(path: &str) -> Result<ConfigBuilder> {
         Ok(serde_yaml::from_reader(File::open(path)?)?)
     }
@@ -241,6 +245,7 @@ impl Config {
     ///
     /// let config = Config::try_from_yaml("/tmp/myconf.yml").unwrap();
     /// ```
+    #[cfg(feature = "yaml")]
     pub fn try_from_yaml(path: &str) -> Result<Config> {
         Ok(serde_yaml::from_reader(File::open(path)?)?)
     }

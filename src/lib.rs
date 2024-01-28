@@ -67,7 +67,9 @@
 )]
 #![deny(warnings, missing_docs)]
 
-pub use batch::{flush, init, init_from_file, init_processor, processor, Batch, BatchProcessor};
+#[cfg(feature = "yaml")]
+pub use batch::init_from_file;
+pub use batch::{flush, init, init_processor, processor, Batch, BatchProcessor};
 pub use buffer::Buffer;
 pub use config::{Config, ConfigBuilder};
 pub use output::GelfTcpOutput;

@@ -28,6 +28,7 @@ pub enum Error {
     /// Invalid value
     ValueSerializerError(serde_value::SerializerError),
     /// Invalid yaml content
+    #[cfg(feature = "yaml")]
     YamlError(serde_yaml::Error),
 }
 
@@ -45,6 +46,7 @@ impl From<log::SetLoggerError> for Error {
     }
 }
 
+#[cfg(feature = "yaml")]
 impl From<serde_yaml::Error> for Error {
     fn from(err: serde_yaml::Error) -> Error {
         Error::YamlError(err)
@@ -93,6 +95,7 @@ impl fmt::Display for Error {
             Error::LogError(err) => err.fmt(f),
             Error::TLSError(err) => err.fmt(f),
             Error::ValueSerializerError(err) => err.fmt(f),
+            #[cfg(feature = "yaml")]
             Error::YamlError(err) => err.fmt(f),
             Error::FullChannelError(e) => {
                 write!(f, "Async channel buffer is full while sending {:?}", e)
