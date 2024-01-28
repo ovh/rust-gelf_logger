@@ -47,6 +47,7 @@ impl Buffer {
             buffer_duration,
         }
     }
+
     /// Buffer body (loop)
     pub fn run(&mut self) {
         let mut last_send = Instant::now();

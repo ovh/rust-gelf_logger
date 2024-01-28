@@ -45,6 +45,7 @@ impl GelfTcpOutput {
             write_timeout,
         }
     }
+
     /// Write `GelfRecord` into TCP socket
     pub fn send(&mut self, data: &[GelfRecord]) -> Result<()> {
         for rec in data.iter() {

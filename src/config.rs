@@ -89,32 +89,38 @@ impl ConfigBuilder {
     pub fn try_from_yaml(path: &str) -> Result<ConfigBuilder> {
         Ok(serde_yaml::from_reader(File::open(path)?)?)
     }
+
     /// Sets threshold for this logger to level. Logging messages which are less
     /// severe than level will be ignored.
     pub fn set_level(mut self, level: GelfLevel) -> ConfigBuilder {
         self.level = level;
         self
     }
+
     /// Sets the hostname of the remote server.
     pub fn set_hostname(mut self, hostname: String) -> ConfigBuilder {
         self.hostname = hostname;
         self
     }
+
     /// Sets the port of the remote server.
     pub fn set_port(mut self, port: u64) -> ConfigBuilder {
         self.port = port;
         self
     }
+
     /// Adds a NUL byte (`\0`) after each entry.
     pub fn set_null_character(mut self, null_character: bool) -> ConfigBuilder {
         self.null_character = null_character;
         self
     }
+
     /// Activate transport security.
     pub fn set_use_tls(mut self, use_tls: bool) -> ConfigBuilder {
         self.use_tls = use_tls;
         self
     }
+
     /// Set the asynchronous buffer size. This buffer is placed between the log
     /// subsystem and the network sender. This represent the maximum number
     /// of message the system will buffer before blocking while waiting for
@@ -138,12 +144,14 @@ impl ConfigBuilder {
         self.buffer_size = Some(buffer_size);
         self
     }
+
     /// Sets the maximum lifetime of the buffer before send
     /// it to the remote server.
     pub fn set_buffer_duration(mut self, buffer_duration: Duration) -> ConfigBuilder {
         self.buffer_duration = Some(buffer_duration);
         self
     }
+
     /// Adds an additional data which will be append to each log entry.
     pub fn put_additional_field<V>(mut self, key: String, value: V) -> ConfigBuilder
     where
@@ -153,6 +161,7 @@ impl ConfigBuilder {
             .insert(Value::String(key), value.into());
         self
     }
+
     /// Adds multiple additional data which will be append to each log entry.
     pub fn extend_additional_fields(
         mut self,
@@ -161,6 +170,7 @@ impl ConfigBuilder {
         self.additional_fields.extend(additional_fields);
         self
     }
+
     /// Set the policy to apply when async send buffer is full.
     ///
     /// It is recommended to use the `FullBufferPolicy::Discard` policy.
@@ -238,6 +248,7 @@ pub struct Config {
 
 impl Config {
     /// Load configuration using the given `path` file.
+    ///
     /// ## Example
     ///
     /// ```no_run
@@ -282,22 +293,27 @@ impl Config {
     pub fn level(&self) -> GelfLevel {
         self.level
     }
+
     /// The name of the remote server.
     pub fn hostname(&self) -> &String {
         &self.hostname
     }
+
     /// The port of the remote host.
     pub fn port(&self) -> u64 {
         self.port
     }
+
     /// Adds a NUL byte (`\0`) after each entry.
     pub fn null_character(&self) -> bool {
         self.null_character
     }
+
     /// Activate transport security.
     pub fn use_tls(&self) -> bool {
         self.use_tls
     }
+
     /// Get the asynchronous buffer size. This buffer is placed between the log
     /// subsystem and the network sender. This represent the maximum number
     /// of message the system will buffer before blocking while waiting for
@@ -307,29 +323,35 @@ impl Config {
     pub fn async_buffer_size(&self) -> Option<usize> {
         self.async_buffer_size
     }
+
     /// Get the upperbound limit on the number of records that can be placed in
     /// the buffer, once this size has been reached, the buffer will be sent
     /// to the remote server.
     pub fn buffer_size(&self) -> Option<usize> {
         self.buffer_size
     }
+
     /// Get the maximum lifetime (in milliseconds) of the buffer before send it
     /// to the remote server.
     pub fn buffer_duration(&self) -> Option<Duration> {
         self.buffer_duration
     }
+
     /// Every additional data which will be append to each log entry.
     pub fn additional_fields(&self) -> &BTreeMap<Value, Value> {
         &self.additional_fields
     }
+
     /// Get the full buffer policy
     pub fn full_buffer_policy(&self) -> Option<FullBufferPolicy> {
         self.full_buffer_policy
     }
+
     /// Get the write timeout
     pub fn write_timeout_ms(&self) -> Option<Duration> {
         self.write_timeout_ms
     }
+
     /// Get the connect timeout
     pub fn connect_timeout_ms(&self) -> Option<Duration> {
         self.connect_timeout_ms
