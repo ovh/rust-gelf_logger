@@ -32,7 +32,7 @@ pub enum Error {
     YamlError(serde_yaml::Error),
 }
 
-pub type Result<S> = std::result::Result<S, Error>;
+pub(crate) type Result<S> = std::result::Result<S, Error>;
 
 impl From<native_tls::HandshakeError<std::net::TcpStream>> for Error {
     fn from(err: native_tls::HandshakeError<std::net::TcpStream>) -> Error {

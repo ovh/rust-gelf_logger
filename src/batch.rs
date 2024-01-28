@@ -20,7 +20,7 @@ use crate::{
 
 static mut BATCH_PROCESSOR: &'static dyn Batch = &NoProcessor;
 
-pub fn set_boxed_processor(processor: Box<dyn Batch>) -> Result<()> {
+pub(crate) fn set_boxed_processor(processor: Box<dyn Batch>) -> Result<()> {
     set_processor_inner(|| unsafe { &*Box::into_raw(processor) })
 }
 
@@ -79,7 +79,7 @@ pub fn init_from_file(path: &str) -> Result<()> {
 ///
 /// info!("hello");
 ///
-/// gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
+/// gelf_logger::flush().expect("Failed to send buffer, log records can be lost!");
 /// ```
 pub fn init(cfg: Config) -> Result<()> {
     let processor = init_processor(&cfg)?;
@@ -158,7 +158,7 @@ pub trait Batch {
     fn flush(&self) -> Result<()>;
 }
 
-pub struct NoProcessor;
+pub(crate) struct NoProcessor;
 
 impl Batch for NoProcessor {
     fn send(&self, _rec: &GelfRecord) -> Result<()> {
@@ -212,7 +212,6 @@ impl Batch for BatchProcessor {
 /// Returns a reference to the batch processor.
 ///
 /// If a logger has not been set, a no-op implementation is returned.
-#[doc(hidden)]
 pub fn processor() -> &'static dyn Batch {
     unsafe { BATCH_PROCESSOR }
 }
