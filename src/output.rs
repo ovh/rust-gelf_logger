@@ -1,18 +1,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// Copyright 2009 The gelf_logger Authors. All rights reserved.
+// Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::io::Write;
-use std::net::{TcpStream, ToSocketAddrs};
+use std::{
+    io,
+    io::Write,
+    net::{TcpStream, ToSocketAddrs},
+    time::Duration,
+};
 
 use native_tls::TlsConnector;
 use serde_gelf::GelfRecord;
 
-use crate::config::Config;
-use crate::formatter::GelfFormatter;
-use crate::result::Result;
-use std::io;
-use std::time::Duration;
+use crate::{config::Config, formatter::GelfFormatter, result::Result};
 
 /// Struct to send `GelfRecord` into a TCP socket
 pub struct GelfTcpOutput {
@@ -56,18 +56,21 @@ impl GelfTcpOutput {
     }
 
     fn write_stream(&mut self, bytes: &[u8]) -> Result<()> {
-        if self.stream.is_none() {
-            self.stream = Some(match self.use_tls {
-                false => Box::new(self.tcp_connect()?),
-                true => {
+        let stream = match &mut self.stream {
+            Some(stream) => stream,
+            None => {
+                let stream: Box<dyn Write> = if self.use_tls {
                     let connector = TlsConnector::new().unwrap();
                     let stream = self.tcp_connect()?;
                     Box::new(connector.connect(&self.hostname, stream)?)
-                }
-            })
-        }
-        if let Err(e) = self.stream.as_mut().unwrap().write(bytes) {
-            // an error occured on the stream, reconnect it next time
+                } else {
+                    Box::new(self.tcp_connect()?)
+                };
+                self.stream.insert(stream)
+            }
+        };
+        if let Err(e) = stream.write_all(bytes) {
+            // an error occurred on the stream, reconnect it next time
             self.stream = None;
             Err(e)?;
         }

@@ -1,20 +1,22 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// Copyright 2009 The gelf_logger Authors. All rights reserved.
+// Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender};
-use std::thread;
-use std::time::Duration;
+use std::{
+    sync::mpsc::{sync_channel, Receiver, SyncSender},
+    thread,
+    time::Duration,
+};
 
 use serde_gelf::{GelfLevel, GelfRecord, GelfRecordGetter};
 
-use crate::buffer::Buffer;
-use crate::config::Config;
-use crate::logger::GelfLogger;
-use crate::output::GelfTcpOutput;
-use crate::result::Result;
-use buffer::Event;
-use config::FullBufferPolicy;
+use crate::{
+    buffer::{Buffer, Event},
+    config::{Config, FullBufferPolicy},
+    logger::GelfLogger,
+    output::GelfTcpOutput,
+    result::Result,
+};
 
 static mut BATCH_PROCESSOR: &'static dyn Batch = &NoProcessor;
 
@@ -40,8 +42,9 @@ where
 ///
 /// ## Example
 ///
-/// ```rust
+/// ```no_run
 /// use gelf_logger::Config;
+/// use log::info;
 ///
 /// fn main() {
 ///     let cfg = Config::try_from_yaml("/tmp/myconfig.yml").unwrap();
@@ -52,7 +55,6 @@ where
 ///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// }
 /// ```
-///
 pub fn init_from_file(path: &str) -> Result<()> {
     init(Config::try_from_yaml(path)?)
 }
@@ -67,6 +69,7 @@ pub fn init_from_file(path: &str) -> Result<()> {
 ///
 /// ```rust
 /// use gelf_logger::Config;
+/// use log::info;
 ///
 /// fn main() {
 ///     let cfg = Config::builder()
@@ -81,7 +84,6 @@ pub fn init_from_file(path: &str) -> Result<()> {
 ///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// }
 /// ```
-///
 pub fn init(cfg: Config) -> Result<()> {
     let processor = init_processor(&cfg)?;
 
@@ -97,7 +99,6 @@ pub fn init(cfg: Config) -> Result<()> {
 }
 
 /// Initialize the BatchProcessor.
-///
 pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
     let (tx, rx): (SyncSender<Event>, Receiver<Event>) =
         sync_channel(cfg.async_buffer_size().unwrap_or(1000));
@@ -133,6 +134,7 @@ pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
 ///
 /// ```rust
 /// use gelf_logger::Config;
+/// use log::info;
 ///
 /// fn main() {
 ///     let cfg = Config::builder()
@@ -147,7 +149,6 @@ pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
 ///     gelf_logger::flush().expect("Failed to send buffer, log records can be lost !");
 /// }
 /// ```
-///
 pub fn flush() -> Result<()> {
     processor().flush()
 }

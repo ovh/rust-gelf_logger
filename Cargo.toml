@@ -1,8 +1,8 @@
 [package]
 name = "gelf_logger"
 version = "0.1.4"
+edition = "2021"
 authors = ["OVH SAS <github@ovh.net>"]
-license = "BSD-3-Clause"
 license-file = "LICENSE"
 description = "Minimal rust logger to send log entries in GELF."
 keywords = ["serde", "logs", "GELF"]

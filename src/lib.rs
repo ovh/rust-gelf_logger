@@ -1,16 +1,18 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-// Copyright 2009 The gelf_logger Authors. All rights reserved.
+// Copyright 2024 The gelf_logger Authors. All rights reserved.
 
 //! # gelf_logger
 //!
 //! The Graylog Extended Log Format ([GELF](http://docs.graylog.org/en/latest/pages/gelf.html)) is a log format that avoids the shortcomings of classic
-//! log formats. GELF is a great choice for logging from within applications. There are libraries
-//! and appenders for many programming languages and logging frameworks so it is easy to implement.
-//! You could use GELF to send every exception as a log message to your Graylog cluster.
+//! log formats. GELF is a great choice for logging from within applications.
+//! There are libraries and appenders for many programming languages and logging
+//! frameworks so it is easy to implement. You could use GELF to send every
+//! exception as a log message to your Graylog cluster.
 //!
 //! The logger will:
-//! 1. serialize log entries  using the [serde_gelf](https://crates.io/crates/serde_gelf) crate.
+//! 1. serialize log entries  using the [serde_gelf](https://crates.io/crates/serde_gelf)
+//!    crate.
 //! 2. bufferize the result into memory.
 //! 3. batch send over network using TCP/TLS.
 //!
@@ -73,16 +75,6 @@
     html_favicon_url = "https://www.ovh.com/favicon.ico"
 )]
 #![deny(warnings, missing_docs)]
-extern crate log;
-extern crate native_tls;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_gelf;
-extern crate serde_json;
-extern crate serde_value;
-extern crate serde_value_utils;
-extern crate serde_yaml;
 
 pub use batch::{flush, init, init_from_file, init_processor, processor, Batch, BatchProcessor};
 pub use buffer::Buffer;
