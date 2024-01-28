@@ -10,9 +10,8 @@
 /// # Examples
 ///
 /// ```rust
-/// use gelf_logger::gelf_log;
+/// use gelf_logger::{gelf_log, GelfLevel};
 /// use serde_derive::Serialize;
-/// use serde_gelf::GelfLevel;
 ///
 /// #[derive(Serialize)]
 /// struct Myapp {

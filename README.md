@@ -20,10 +20,9 @@ The logger will:
 ```rust
 use std::time::Duration;
 
-use gelf_logger::{gelf_warn, Config};
+use gelf_logger::{gelf_warn, Config, GelfLevel};
 use log::info;
 use serde_derive::Serialize;
-use serde_gelf::GelfLevel;
 
 #[derive(Serialize)]
 struct Myapp {
@@ -47,7 +46,7 @@ fn main() {
         .set_level(GelfLevel::Informational)
         .set_buffer_duration(Duration::from_millis(300))
         .set_buffer_size(500)
-        .put_additional_field("myValue".into(), serde_value::Value::I64(10))
+        .put_additional_field("myValue".into(), gelf_logger::Value::I64(10))
         .set_null_character(true)
         .build();
 
