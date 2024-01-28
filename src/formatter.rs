@@ -46,9 +46,6 @@ impl GelfFormatter {
 
 impl From<&Config> for GelfFormatter {
     fn from(cfg: &Config) -> GelfFormatter {
-        GelfFormatter::new(
-            cfg.null_character(),
-            cfg.additional_fields().clone(),
-        )
+        GelfFormatter::new(cfg.null_character(), cfg.additional_fields().clone())
     }
 }
