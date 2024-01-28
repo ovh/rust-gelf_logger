@@ -20,10 +20,8 @@ impl GelfFormatter {
     pub fn new(null_character: bool, additional_fields: BTreeMap<Value, Value>) -> GelfFormatter {
         GelfFormatter {
             null_character,
-            additional_fields: match to_flatten_maptree("_", Some("_"), &additional_fields) {
-                Err(_) => BTreeMap::new(),
-                Ok(values) => values,
-            },
+            additional_fields: to_flatten_maptree("_", Some("_"), &additional_fields)
+                .unwrap_or_else(|_| BTreeMap::new()),
         }
     }
     fn default_additional_fields(&self) -> &BTreeMap<Value, Value> {
