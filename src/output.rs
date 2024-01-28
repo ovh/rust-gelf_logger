@@ -46,10 +46,10 @@ impl GelfTcpOutput {
         }
     }
     /// Write `GelfRecord` into TCP socket
-    pub fn send(&mut self, data: &Vec<GelfRecord>) -> Result<()> {
+    pub fn send(&mut self, data: &[GelfRecord]) -> Result<()> {
         for rec in data.iter() {
             if let Ok(jdata) = self.formatter.format(rec) {
-                self.write_stream(&jdata.as_bytes())?;
+                self.write_stream(jdata.as_bytes())?;
             }
         }
         Ok(())
@@ -83,7 +83,7 @@ impl GelfTcpOutput {
             None => TcpStream::connect(address)?,
             Some(dur) => TcpStream::connect_timeout(
                 &address.to_socket_addrs()?.next().unwrap(),
-                dur.clone(),
+                *dur,
             )?,
         };
         stream.set_write_timeout(self.write_timeout)?;
@@ -95,11 +95,11 @@ impl From<&Config> for GelfTcpOutput {
     fn from(cfg: &Config) -> GelfTcpOutput {
         GelfTcpOutput::new(
             cfg.hostname().clone(),
-            cfg.port().clone(),
+            cfg.port(),
             GelfFormatter::from(cfg),
-            cfg.use_tls().clone(),
-            cfg.connect_timeout_ms().map(|ms| Duration::from_millis(ms)),
-            cfg.write_timeout_ms().map(|ms| Duration::from_millis(ms)),
+            cfg.use_tls(),
+            cfg.connect_timeout_ms().map(Duration::from_millis),
+            cfg.write_timeout_ms().map(Duration::from_millis),
         )
     }
 }
