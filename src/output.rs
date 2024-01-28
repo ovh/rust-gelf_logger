@@ -97,8 +97,8 @@ impl From<&Config> for GelfTcpOutput {
             cfg.port(),
             GelfFormatter::from(cfg),
             cfg.use_tls(),
-            cfg.connect_timeout_ms().map(Duration::from_millis),
-            cfg.write_timeout_ms().map(Duration::from_millis),
+            cfg.connect_timeout_ms(),
+            cfg.write_timeout_ms(),
         )
     }
 }

@@ -108,7 +108,7 @@ pub fn init_processor(cfg: &Config) -> Result<BatchProcessor> {
             rx,
             gelf_tcp_output,
             config.buffer_size(),
-            config.buffer_duration().map(Duration::from_millis),
+            config.buffer_duration(),
         )
         .run();
     });

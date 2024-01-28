@@ -2,9 +2,9 @@
 // license that can be found in the LICENSE file.
 // Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-use std::collections::BTreeMap;
 #[cfg(feature = "yaml")]
 use std::fs::File;
+use std::{collections::BTreeMap, time::Duration};
 
 use serde_derive::Deserialize;
 use serde_gelf::GelfLevel;
@@ -36,11 +36,11 @@ pub struct ConfigBuilder {
     use_tls: bool,
     async_buffer_size: Option<usize>,
     buffer_size: Option<usize>,
-    buffer_duration: Option<u64>,
+    buffer_duration: Option<Duration>,
     additional_fields: BTreeMap<Value, Value>,
     full_buffer_policy: Option<FullBufferPolicy>,
-    connect_timeout_ms: Option<u64>,
-    write_timeout_ms: Option<u64>,
+    connect_timeout_ms: Option<Duration>,
+    write_timeout_ms: Option<Duration>,
 }
 
 impl Default for ConfigBuilder {
@@ -138,9 +138,9 @@ impl ConfigBuilder {
         self.buffer_size = Some(buffer_size);
         self
     }
-    /// Sets the maximum lifetime (in milli seconds) of the buffer before send
+    /// Sets the maximum lifetime of the buffer before send
     /// it to the remote server.
-    pub fn set_buffer_duration(mut self, buffer_duration: u64) -> ConfigBuilder {
+    pub fn set_buffer_duration(mut self, buffer_duration: Duration) -> ConfigBuilder {
         self.buffer_duration = Some(buffer_duration);
         self
     }
@@ -172,12 +172,12 @@ impl ConfigBuilder {
         self
     }
     /// Set the TCP connect timeout.    
-    pub fn set_connect_timeout_ms(mut self, connect_timeout_ms: Option<u64>) -> ConfigBuilder {
+    pub fn set_connect_timeout_ms(mut self, connect_timeout_ms: Option<Duration>) -> ConfigBuilder {
         self.connect_timeout_ms = connect_timeout_ms;
         self
     }
     /// Set the TCP write timeout.    
-    pub fn set_write_timeout_ms(mut self, write_timeout_ms: Option<u64>) -> ConfigBuilder {
+    pub fn set_write_timeout_ms(mut self, write_timeout_ms: Option<Duration>) -> ConfigBuilder {
         self.write_timeout_ms = write_timeout_ms;
         self
     }
@@ -229,11 +229,11 @@ pub struct Config {
     use_tls: bool,
     async_buffer_size: Option<usize>,
     buffer_size: Option<usize>,
-    buffer_duration: Option<u64>,
+    buffer_duration: Option<Duration>,
     additional_fields: BTreeMap<Value, Value>,
     full_buffer_policy: Option<FullBufferPolicy>,
-    connect_timeout_ms: Option<u64>,
-    write_timeout_ms: Option<u64>,
+    connect_timeout_ms: Option<Duration>,
+    write_timeout_ms: Option<Duration>,
 }
 
 impl Config {
@@ -315,7 +315,7 @@ impl Config {
     }
     /// Get the maximum lifetime (in milliseconds) of the buffer before send it
     /// to the remote server.
-    pub fn buffer_duration(&self) -> Option<u64> {
+    pub fn buffer_duration(&self) -> Option<Duration> {
         self.buffer_duration
     }
     /// Every additional data which will be append to each log entry.
@@ -326,12 +326,12 @@ impl Config {
     pub fn full_buffer_policy(&self) -> Option<FullBufferPolicy> {
         self.full_buffer_policy
     }
-    /// Get the write timeout in milliseconds
-    pub fn write_timeout_ms(&self) -> Option<u64> {
+    /// Get the write timeout
+    pub fn write_timeout_ms(&self) -> Option<Duration> {
         self.write_timeout_ms
     }
-    /// Get the connect timeout in milliseconds
-    pub fn connect_timeout_ms(&self) -> Option<u64> {
+    /// Get the connect timeout
+    pub fn connect_timeout_ms(&self) -> Option<Duration> {
         self.connect_timeout_ms
     }
 
