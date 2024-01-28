@@ -67,7 +67,7 @@
     html_logo_url = "https://eu.api.ovh.com/images/com-square-bichro.png",
     html_favicon_url = "https://www.ovh.com/favicon.ico"
 )]
-#![deny(warnings, missing_docs)]
+#![deny(warnings, missing_docs, unreachable_pub)]
 
 #[cfg(feature = "yaml")]
 pub use batch::init_from_file;
@@ -76,6 +76,9 @@ pub use buffer::Buffer;
 pub use config::{Config, ConfigBuilder};
 pub use output::GelfTcpOutput;
 pub use result::Error;
+#[doc(no_inline)]
+pub use serde_gelf::{GelfLevel, GelfRecord};
+#[doc(no_inline)]
 pub use serde_value::Value;
 
 mod batch;
