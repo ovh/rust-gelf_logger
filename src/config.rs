@@ -39,8 +39,8 @@ pub struct ConfigBuilder {
     buffer_duration: Option<Duration>,
     additional_fields: BTreeMap<Value, Value>,
     full_buffer_policy: Option<FullBufferPolicy>,
-    connect_timeout_ms: Option<Duration>,
-    write_timeout_ms: Option<Duration>,
+    connect_timeout: Option<Duration>,
+    write_timeout: Option<Duration>,
 }
 
 impl Default for ConfigBuilder {
@@ -68,8 +68,8 @@ impl Default for ConfigBuilder {
             buffer_duration: None,
             additional_fields: BTreeMap::default(),
             full_buffer_policy: Some(FullBufferPolicy::Discard),
-            connect_timeout_ms: None,
-            write_timeout_ms: None,
+            connect_timeout: None,
+            write_timeout: None,
         }
     }
 }
@@ -182,13 +182,13 @@ impl ConfigBuilder {
         self
     }
     /// Set the TCP connect timeout.    
-    pub fn set_connect_timeout_ms(mut self, connect_timeout_ms: Option<Duration>) -> ConfigBuilder {
-        self.connect_timeout_ms = connect_timeout_ms;
+    pub fn set_connect_timeout(mut self, connect_timeout: Option<Duration>) -> ConfigBuilder {
+        self.connect_timeout = connect_timeout;
         self
     }
     /// Set the TCP write timeout.    
-    pub fn set_write_timeout_ms(mut self, write_timeout_ms: Option<Duration>) -> ConfigBuilder {
-        self.write_timeout_ms = write_timeout_ms;
+    pub fn set_write_timeout(mut self, write_timeout: Option<Duration>) -> ConfigBuilder {
+        self.write_timeout = write_timeout;
         self
     }
 
@@ -205,8 +205,8 @@ impl ConfigBuilder {
             buffer_duration: self.buffer_duration,
             additional_fields: self.additional_fields,
             full_buffer_policy: self.full_buffer_policy,
-            connect_timeout_ms: self.connect_timeout_ms,
-            write_timeout_ms: self.write_timeout_ms,
+            connect_timeout: self.connect_timeout,
+            write_timeout: self.write_timeout,
         }
     }
 }
@@ -242,8 +242,8 @@ pub struct Config {
     buffer_duration: Option<Duration>,
     additional_fields: BTreeMap<Value, Value>,
     full_buffer_policy: Option<FullBufferPolicy>,
-    connect_timeout_ms: Option<Duration>,
-    write_timeout_ms: Option<Duration>,
+    connect_timeout: Option<Duration>,
+    write_timeout: Option<Duration>,
 }
 
 impl Config {
@@ -331,7 +331,7 @@ impl Config {
         self.buffer_size
     }
 
-    /// Get the maximum lifetime (in milliseconds) of the buffer before send it
+    /// Get the maximum lifetime of the buffer before send it
     /// to the remote server.
     pub fn buffer_duration(&self) -> Option<Duration> {
         self.buffer_duration
@@ -348,13 +348,13 @@ impl Config {
     }
 
     /// Get the write timeout
-    pub fn write_timeout_ms(&self) -> Option<Duration> {
-        self.write_timeout_ms
+    pub fn write_timeout(&self) -> Option<Duration> {
+        self.write_timeout
     }
 
     /// Get the connect timeout
-    pub fn connect_timeout_ms(&self) -> Option<Duration> {
-        self.connect_timeout_ms
+    pub fn connect_timeout(&self) -> Option<Duration> {
+        self.connect_timeout
     }
 
     /// Returns a new builder.
