@@ -98,8 +98,8 @@ impl From<&Config> for GelfTcpOutput {
             cfg.port(),
             GelfFormatter::from(cfg),
             cfg.use_tls(),
-            cfg.connect_timeout_ms(),
-            cfg.write_timeout_ms(),
+            cfg.connect_timeout(),
+            cfg.write_timeout(),
         )
     }
 }
