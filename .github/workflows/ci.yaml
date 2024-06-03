@@ -18,7 +18,6 @@ jobs:
           cargo build --release --all-features
       - name: tests
         run: |
-          cargo test
           cargo test --all-features
       - name: fmt
         run: cargo fmt --check
