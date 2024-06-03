@@ -1,6 +1,6 @@
 [package]
 name = "gelf_logger"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["OVH SAS <github@ovh.net>"]
 license-file = "LICENSE"
@@ -10,20 +10,22 @@ readme = "README.md"
 repository = "https://github.com/ovh/rust-gelf_logger"
 
 [features]
-ovh-ldp = ["serde_gelf/ovh-ldp"]
-yaml = ["dep:serde_yaml"]
+default = []
+ovh-ldp = []
 
 [dependencies]
-log = { version = "0.4", features = ["std"] }
-native-tls = "0.2"
-serde = "1.0"
-serde-value = "0.6"
-serde-value-utils  = "0.1"
-serde_derive = "1.0"
-serde_gelf = "0.1"
-serde_json = "1.0"
-serde_yaml = { version = "0.9", optional = true }
+env_filter = "0.1.0"
+hostname = "0.4.0"
+log = { version = "0.4.21", features = ["kv_serde", "std"] }
+native-tls = "0.2.12"
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0.117"
+thiserror = "1.0.61"
+
+[dev-dependencies]
+log = { version = "0.4.21", features = ["kv_std"] }
+serde = { version = "1.0.203", features = ["derive"] }
 
 [package.metadata.docs.rs]
-rustdoc-args = ["--cfg", "docsrs"]
+rustdoc-args = ["--cfg", "docsrs", "--generate-link-to-definition"]
 all-features = true

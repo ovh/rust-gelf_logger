@@ -2,54 +2,58 @@
 // license that can be found in the LICENSE file.
 // Copyright 2024 The gelf_logger Authors. All rights reserved.
 
-/// The standard logging macro.
-///
-/// This macro will generically log with the specified `GelfLevel`, any struct
-/// which implement `Serialize` and `format!` based argument list.
+/// Logs a message with the specific level.
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
 /// use gelf_logger::{gelf_log, GelfLevel};
-/// use serde_derive::Serialize;
 ///
-/// #[derive(Serialize)]
-/// struct Myapp {
-///    name: String,
-///    version: String,
-/// }
-///
-/// gelf_log!(level: GelfLevel::Error, "Hello!");
-///
-/// let myapp = Myapp { name: "myapp".into(), version: "0.0.1".into() };
-/// gelf_log!(level: GelfLevel::Debugging, extra: &myapp, "myapp state");
+/// gelf_log!(GelfLevel::Informational, "Something happened");
+/// gelf_log!(GelfLevel::Informational, foo = "bar"; "Something happened");
+/// gelf_log!(target: "app-1", GelfLevel::Informational, foo = "bar"; "Something happened");
 /// ```
 #[macro_export]
 macro_rules! gelf_log {
-    (level: $level:expr, extra: $extra:expr, $($arg:tt)+) => {
-        {
-            use std::collections::BTreeMap;
-            use serde_gelf::GelfRecordBuilder;
-
-            let _ = $crate::processor().send(&serde_gelf::GelfRecord::new()
-                .set_facility(module_path!().to_string())
-                .set_file(file!().to_string())
-                .set_line(line!())
-                .set_level($level)
-                .set_message(format_args!($($arg)+).to_string())
-                .extend_additional_fields(serde_gelf::to_flat_dict($extra).unwrap_or_default())
-            );
+    // gelf_log!(target: "my_target", GelfLevel::Informational, key1:? = 42, key2 = true; "a {} event", "log");
+    (target: $target:expr, $lvl:expr, $($key:tt $(:$capture:tt)? $(= $value:expr)?),+; $($arg:tt)+) => ({
+        let log_lvl = log::Level::from($lvl);
+        if log_lvl <= log::STATIC_MAX_LEVEL && log_lvl <= log::max_level() {
+            let lvl_key = $crate::INTERNAL_LEVEL_FIELD_NAME;
+            let kvs = [(lvl_key, log::__log_value!(lvl_key = $lvl as u32)), $((log::__log_key!($key), log::__log_value!($key $(:$capture)* = $($value)*))),+];
+            let mut builder = log::Record::builder();
+            builder
+                .args(format_args!($($arg)+))
+                .level(log_lvl) // Will be overwrite.
+                .target($target)
+                .module_path_static(Some(module_path!()))
+                .file_static(Some(file!()))
+                .line(Some(line!()))
+                .key_values(&kvs);
+            log::logger().log(&builder.build());
         }
-    };
-    (level: $level:expr, $($arg:tt)+) => {
-        gelf_log!(level: $level, extra: &std::collections::BTreeMap::<(), ()>::new(), $($arg)+);
-    };
-    (extra: $extra:expr, $($arg:tt)+) => {
-        gelf_log!(level: serde_gelf::GelfLevel::default(), extra: $extra, $($arg)+);
-    };
-    ($($arg:tt)+) => {
-        gelf_log!(level: serde_gelf::GelfLevel::default(), extra: &std::collections::BTreeMap::<(), ()>::new(), $($arg)+);
-    };
+    });
+
+    // gelf_log!(target: "my_target", GelfLevel::Informational, "a {} event", "log");
+    (target: $target:expr, $lvl:expr, $($arg:tt)+) => ({
+        let log_lvl = log::Level::from($lvl);
+        if log_lvl <= log::STATIC_MAX_LEVEL && log_lvl <= log::max_level() {
+            let kvs = [($crate::INTERNAL_LEVEL_FIELD_NAME, $lvl as u32)];
+            let mut builder = log::Record::builder();
+            builder
+                .args(format_args!($($arg)+))
+                .level(log_lvl) // Will be overwrite.
+                .target($target)
+                .module_path_static(Some(module_path!()))
+                .file_static(Some(file!()))
+                .line(Some(line!()))
+                .key_values(&kvs);
+            log::logger().log(&builder.build());
+        }
+    });
+
+    // gelf_log!(GelfLevel::Informational, "a log event")
+    ($lvl:expr, $($arg:tt)+) => ($crate::gelf_log!(target: module_path!(), $lvl, $($arg)+));
 }
 
 /// Logs a message at the emergency level (A "panic" condition).
@@ -62,16 +66,14 @@ macro_rules! gelf_log {
 /// ```
 /// use gelf_logger::gelf_emergency;
 ///
-/// gelf_emergency!("System is unusable !!");
+/// gelf_emergency!("System is unusable!!");
+/// gelf_emergency!(foo = "bar"; "System is unusable!!");
+/// gelf_emergency!(target: "app-1", foo = "bar"; "System is unusable!!");
 /// ```
 #[macro_export]
 macro_rules! gelf_emergency {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Emergency, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Emergency, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Emergency, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Emergency, $($arg)+))
 }
 
 /// Logs a message at the alert level (Should be corrected immediately).
@@ -85,15 +87,13 @@ macro_rules! gelf_emergency {
 /// use gelf_logger::gelf_alert;
 ///
 /// gelf_alert!("Action must be taken immediately.");
+/// gelf_alert!(foo = "bar"; "Action must be taken immediately.");
+/// gelf_alert!(target: "app-1", foo = "bar"; "Action must be taken immediately.");
 /// ```
 #[macro_export]
 macro_rules! gelf_alert {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Alert, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Alert, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Alert, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Alert, $($arg)+))
 }
 
 /// Logs a message at the critical level (Should be corrected immediately).
@@ -108,15 +108,13 @@ macro_rules! gelf_alert {
 /// use gelf_logger::gelf_critical;
 ///
 /// gelf_critical!("No space left on device");
+/// gelf_critical!(foo = "bar"; "No space left on device");
+/// gelf_critical!(target: "app-1", foo = "bar"; "No space left on device");
 /// ```
 #[macro_export]
 macro_rules! gelf_critical {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Critical, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Critical, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Critical, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Critical, $($arg)+))
 }
 
 /// Logs a message at the error level (Non-urgent failures).
@@ -130,15 +128,13 @@ macro_rules! gelf_critical {
 /// use gelf_logger::gelf_error;
 ///
 /// gelf_error!("Login failed!");
+/// gelf_error!(foo = "bar"; "Login failed!");
+/// gelf_error!(target: "app-1", foo = "bar"; "Login failed!");
 /// ```
 #[macro_export]
 macro_rules! gelf_error {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Error, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Error, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Error, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Error, $($arg)+))
 }
 
 /// Logs a message at the warning level (Warning messages).
@@ -153,15 +149,13 @@ macro_rules! gelf_error {
 /// use gelf_logger::gelf_warn;
 ///
 /// gelf_warn!("Error while fetching metadata with correlation");
+/// gelf_warn!(foo = "bar"; "Error while fetching metadata with correlation");
+/// gelf_warn!(target: "app-1", foo = "bar"; "Error while fetching metadata with correlation");
 /// ```
 #[macro_export]
 macro_rules! gelf_warn {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Warning, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Warning, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Warning, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Warning, $($arg)+))
 }
 
 /// Logs a message at the notice level (Unusual event).
@@ -176,15 +170,13 @@ macro_rules! gelf_warn {
 /// use gelf_logger::gelf_notice;
 ///
 /// gelf_notice!("User reached 90% of his quota");
+/// gelf_notice!(foo = "bar"; "User reached 90% of his quota");
+/// gelf_notice!(target: "app-1", foo = "bar"; "User reached 90% of his quota");
 /// ```
 #[macro_export]
 macro_rules! gelf_notice {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Notice, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Notice, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Notice, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Notice, $($arg)+))
 }
 
 /// Logs a message at the info level (Normal message).
@@ -199,15 +191,13 @@ macro_rules! gelf_notice {
 /// use gelf_logger::gelf_info;
 ///
 /// gelf_info!("Downloading file...");
+/// gelf_info!(foo = "bar"; "Downloading file...");
+/// gelf_info!(target: "app-1", foo = "bar"; "Downloading file...");
 /// ```
 #[macro_export]
 macro_rules! gelf_info {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Informational, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Informational, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Informational, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Informational, $($arg)+))
 }
 
 /// Logs a message at the debug level (Mainly used by developers).
@@ -220,14 +210,12 @@ macro_rules! gelf_info {
 /// ```
 /// use gelf_logger::gelf_debug;
 ///
-/// gelf_debug!("myvalue = '5'");
+/// gelf_debug!("Some debug data");
+/// gelf_debug!(foo = "bar"; "Some debug data");
+/// gelf_debug!(target: "app-1", foo = "bar"; "Some debug data");
 /// ```
 #[macro_export]
 macro_rules! gelf_debug {
-    (extra: $extra:expr, $($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Debugging, extra: $extra, $($arg)+);
-    );
-    ($($arg:tt)+) => (
-        $crate::gelf_log!(level: serde_gelf::GelfLevel::Debugging, extra: &BTreeMap::<(), ()>::new(), $($arg)+);
-    );
+    (target: $target:expr, $($arg:tt)+) => ($crate::gelf_log!(target: $target, gelf_logger::GelfLevel::Debugging, $($arg)+));
+    ($($arg:tt)+) => ($crate::gelf_log!(gelf_logger::GelfLevel::Debugging, $($arg)+))
 }

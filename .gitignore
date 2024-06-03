@@ -1,8 +1,6 @@
-*.iml
-.cargo
-.idea
-Cargo.lock
-etc
-examples
-bin
+# Cargo
 target
+Cargo.lock
+
+# IntelliJ
+.idea
