@@ -108,11 +108,11 @@ fn hostname() -> &'static str {
 /// for milliseconds.
 #[inline(always)]
 fn now() -> f64 {
-    // TODO: check if too much precision is fine or not.
-    SystemTime::now()
+    let ts = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs_f64()
+        .as_secs_f64();
+    ts - ts.rem_euclid(0.001)
 }
 
 /// `type_suffix`: https://help.ovhcloud.com/csm/en-logs-data-platform-field-naming-conventions?id=kb_article_view&sysparm_article=KB0055662
