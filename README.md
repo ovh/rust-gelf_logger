@@ -1,67 +1,64 @@
 # gelf_logger 
 
-[![Build Status](https://travis-ci.org/ovh/rust-gelf_logger.svg?branch=master)](https://travis-ci.org/ovh/rust-gelf_logger) 
-[![Latest version](https://img.shields.io/crates/v/gelf_logger.svg)](https://crates.io/crates/gelf_logger) 
-[![Documentation](https://docs.rs/gelf_logger/badge.svg)](https://docs.rs/gelf_logger) 
-![License](https://img.shields.io/crates/l/gelf_logger.svg)
-
 The Graylog Extended Log Format ([GELF](http://docs.graylog.org/en/latest/pages/gelf.html)) is a log format that avoids the shortcomings of classic
-log formats. GELF is a great choice for logging from within applications. There are libraries
-and appenders for many programming languages and logging frameworks so it is easy to implement.
-You could use GELF to send every exception as a log message to your Graylog cluster.
+log formats. GELF is a great choice for logging from within applications.
+There are libraries and appenders for many programming languages and logging
+frameworks, so it is easy to implement. You could use GELF to send every
+exception as a log message to your Graylog cluster.
 
-The logger will:
-1. serialize log entries  using the [serde_gelf](https://crates.io/crates/serde_gelf) crate.
-2. bufferize the result into memory.
-3. batch send over network using TCP/TLS.
-
-## Example
+## Examples
 
 ```rust
 use std::time::Duration;
 
-use gelf_logger::{gelf_warn, Config, GelfLevel};
-use log::info;
-use serde_derive::Serialize;
+use gelf_logger::{gelf_warn, GelfLevel, Builder, gelf_log, gelf_emergency, gelf_alert, gelf_critical, gelf_error, gelf_notice, gelf_info, gelf_debug};
+use log::{error, info, LevelFilter, warn};
+use serde::Serialize;
 
-#[derive(Serialize)]
-struct Myapp {
-    name: String,
-    version: String,
+// Logs will be sent using a TCP socket.
+Builder::new()
+    .filter_level(LevelFilter::Info)
+    .hostname("127.0.0.1".to_owned())
+    .port(2202)
+    .tls(false)
+    .init();
+
+#[derive(Serialize, Debug)]
+struct Request<'a> {
+    id: u16,
+    method: &'a str,
+    path: &'a str,
 }
 
-impl Default for Myapp {
-    fn default() -> Myapp {
-        Myapp {
-            name: env!("CARGO_PKG_NAME").into(),
-            version: env!("CARGO_PKG_VERSION").into(),
-        }
-    }
-}
+// Basic kv logs.
+info!(count = 5; "packet received");
+warn!(user = "foo"; "unknown user");
+error!(err:err = "abc".parse::<u32>().unwrap_err(); "parse error");
 
-fn main() {
-    let cfg = Config::builder()
-        .set_hostname("localhost".into())
-        .set_port(12202)
-        .set_level(GelfLevel::Informational)
-        .set_buffer_duration(Duration::from_millis(300))
-        .set_buffer_size(500)
-        .put_additional_field("myValue".into(), gelf_logger::Value::I64(10))
-        .set_null_character(true)
-        .build();
+let req = Request {
+    id: 42,
+    method: "GET",
+    path: "/login",
+};
+// Will serialize as a `Debug` string.
+info!(req:?; "incoming request");
+// Will flatten all the field and add them as additional fields.
+info!(req:serde; "incoming request");
 
-    // Initialize logger
-    gelf_logger::init(cfg).unwrap();
+// Gelf specific levels.
+gelf_log!(GelfLevel::Emergency, foo = "bar"; "an emergency log");
+gelf_emergency!(foo = "bar"; "an emergency log");
+gelf_alert!(foo = "bar"; "an alert log");
+gelf_critical!(foo = "bar"; "a critical log");
+gelf_error!(foo = "bar"; "an error log");
+gelf_warn!(foo = "bar"; "a warn log");
+gelf_notice!(foo = "bar"; "a notice log");
+gelf_info!(foo = "bar"; "an info log");
+gelf_debug!(foo = "bar"; "a debug log");
 
-    // Send log using a macro defined in the create log
-    info!("common message");
-
-    // Use a macro from gelf_logger to send additional data
-    gelf_warn!(extra: &Myapp::default(), "My app info");
-
-    // make sure all buffered records are sent before exiting
-    gelf_logger::flush().unwrap();
-}
+// Flush underlying TCP socket.
+// This will only flush. The socket may be dropped without proper closing.
+log::logger().flush();
 ```
 
 ## License
