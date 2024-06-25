@@ -6,12 +6,12 @@ use std::{env, time::Duration};
 
 use env_filter::Builder as FilterBuilder;
 use log::LevelFilter;
-use serde_json::{Map, Value};
 
 use crate::{
     error::Error,
     logger::{GelfLogger, Target, TcpTarget, Writer},
     record::flatten,
+    Map, Value,
 };
 
 const DEFAULT_FILTER_ENV: &str = "RUST_LOG";

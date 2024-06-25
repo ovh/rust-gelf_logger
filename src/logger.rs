@@ -14,9 +14,8 @@ use std::{
 use env_filter::Filter;
 use log::{LevelFilter, Log, Metadata, Record};
 use native_tls::{TlsConnector, TlsStream};
-use serde_json::{Map, Value};
 
-use crate::{error::Error, record::GelfRecord, Builder};
+use crate::{Builder, Error, GelfRecord, Map, Value};
 
 /// A logger that will format and forward any [`Record`] to the set-up target.
 #[derive(Debug)]
