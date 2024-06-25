@@ -18,7 +18,7 @@ use serde_json::{Map, Value};
 
 use crate::{error::Error, record::GelfRecord, Builder};
 
-/// A logger what will format and forward any [`Record`] to the set-up target.
+/// A logger that will format and forward any [`Record`] to the set-up target.
 #[derive(Debug)]
 pub struct GelfLogger {
     pub(crate) filter: Filter,
