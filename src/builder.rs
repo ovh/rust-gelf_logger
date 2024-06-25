@@ -243,8 +243,8 @@ impl Builder {
         self
     }
 
-    /// Enable or disable automatic appending type suffix to additional fields according to this
-    /// [documentation](https://help.ovhcloud.com/csm/en-logs-data-platform-field-naming-conventions?id=kb_article_view&sysparm_article=KB0055662).
+    /// Enable or disable automatic appending type suffix to additional fields
+    /// according to this [documentation](https://help.ovhcloud.com/csm/en-logs-data-platform-field-naming-conventions?id=kb_article_view&sysparm_article=KB0055662).
     pub fn type_suffix(mut self, enabled: bool) -> Self {
         self.type_suffix = enabled;
         self
@@ -327,8 +327,8 @@ impl Builder {
 }
 
 impl Default for Builder {
-    /// Creates a default builder that will log every record to `stderr`, with no
-    /// additional fields and no null_character at the end.
+    /// Creates a default builder that will log every record to `stderr`, with
+    /// no additional fields and no null_character at the end.
     fn default() -> Self {
         Self {
             filter: FilterBuilder::default(),
