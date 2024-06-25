@@ -2,16 +2,15 @@ use std::env;
 
 use gelf_logger::{
     gelf_alert, gelf_critical, gelf_debug, gelf_emergency, gelf_error, gelf_info, gelf_log,
-    gelf_notice, gelf_warn, Builder, GelfLevel,
+    gelf_notice, gelf_warn, Builder, GelfLevel, Value,
 };
 use log::{error, info, warn};
 use serde::Serialize;
-use serde_json::Value;
 
 fn main() {
     // Init logger.
     let mut builder = Builder::new()
-        .parse_filters("info")
+        .parse_filters("debug")
         .extend_additional_fields([(
             "instance".to_owned(),
             Value::String("instance-1".to_owned()),

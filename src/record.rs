@@ -12,9 +12,8 @@ use log::{
     Record,
 };
 use serde::Serialize;
-use serde_json::{Map, Value};
 
-use crate::level::GelfLevel;
+use crate::{GelfLevel, Map, Value};
 
 #[doc(hidden)]
 pub static INTERNAL_LEVEL_FIELD_NAME: &str = "__private_level";

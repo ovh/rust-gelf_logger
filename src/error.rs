@@ -4,7 +4,6 @@
 
 use std::{io, net::TcpStream};
 
-use log::SetLoggerError;
 use thiserror::Error as ThisError;
 
 /// Errors that can occur when using this crate.
@@ -13,7 +12,7 @@ use thiserror::Error as ThisError;
 pub enum Error {
     /// Occurs when trying to set the logger while another one is already set.
     #[error("logger already set")]
-    AlreadySet(#[from] SetLoggerError),
+    AlreadySet(#[from] log::SetLoggerError),
     /// Occurs when any open, write or flush calls fail.
     #[error("io failure")]
     Io(#[from] io::Error),

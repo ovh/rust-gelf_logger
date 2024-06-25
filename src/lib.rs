@@ -120,4 +120,4 @@ pub use record::GelfRecord;
 #[doc(hidden)]
 pub use record::INTERNAL_LEVEL_FIELD_NAME;
 #[doc(no_inline)]
-pub use serde_json::Value;
+pub use serde_json::{Map, Value};
